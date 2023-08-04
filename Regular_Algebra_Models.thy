@@ -223,7 +223,7 @@ qed
 subsection \<open>Regular Language Model of Salomaa Algebra\<close>
 
 notation
-  Atom ("\<langle>_\<rangle>") and
+  Sym ("\<langle>_\<rangle>") and
   Plus (infixl "+\<^sub>r" 65) and
   Times (infixl "\<cdot>\<^sub>r" 70) and
   Star ("_\<^sup>\<star>\<^sub>r" [101] 100) and
@@ -233,7 +233,7 @@ notation
 fun rexp_ewp :: "'a rexp \<Rightarrow> bool" where
   "rexp_ewp 0\<^sub>r = False" |
   "rexp_ewp 1\<^sub>r = True" |
-  "rexp_ewp \<langle>a\<rangle> = False" |
+  "rexp_ewp \<langle>f\<rangle> = False" |
   "rexp_ewp (s +\<^sub>r t) = (rexp_ewp s \<or> rexp_ewp t)" |
   "rexp_ewp (s \<cdot>\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
   "rexp_ewp (s\<^sup>\<star>\<^sub>r) = True"

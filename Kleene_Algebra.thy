@@ -12,29 +12,6 @@ begin
 
 subsection \<open>Left Near Kleene Algebras\<close>
 
-text \<open>Extending the hierarchy developed in @{theory Kleene_Algebra.Dioid} we now
-add an operation of Kleene star, finite iteration, or reflexive
-transitive closure to variants of Dioids. Since a multiplicative unit
-is needed for defining the star we only consider variants with~$1$;
-$0$ can be added separately. We consider the left star induction axiom
-and the right star induction axiom independently since in some
-applications, e.g., Salomaa's axioms, probabilistic Kleene algebras,
-or completeness proofs with respect to the equational theoy of regular
-expressions and regular languages, the right star induction axiom is
-not needed or not valid.
-
-We start with near dioids, then consider pre-dioids and finally
-dioids. It turns out that many of the known laws of Kleene algebras
-hold already in these more general settings. In fact, all our
-equational theorems have been proved within left Kleene algebras, as
-expected.
-
-Although most of the proofs in this file could be fully automated by
-Sledgehammer and Metis, we display step-wise proofs as they would
-appear in a text book. First, this file may then be useful as a
-reference manual on Kleene algebra. Second, it is better protected
-against changes in the underlying theories and supports easy
-translation of proofs into other settings.\<close>
 
 class left_near_kleene_algebra = near_dioid_one + star_op +
   assumes star_unfoldl: "1 + x \<cdot> x\<^sup>\<star> \<le> x\<^sup>\<star>"

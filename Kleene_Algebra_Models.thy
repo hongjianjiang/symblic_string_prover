@@ -133,7 +133,7 @@ by Krauss and Nipkow~\cite{krauss12regular}.\<close>
 datatype 'a rexp =
   Zero
 | One
-| Atom 'a
+| Sym "('a \<Rightarrow> bool)"
 | Plus "'a rexp" "'a rexp"
 | Times "'a rexp" "'a rexp"
 | Star "'a rexp"
@@ -145,7 +145,7 @@ adapted from there.\<close>
 fun lang :: "'a rexp \<Rightarrow> 'a lan" where
   "lang Zero = 0"  \<comment> \<open>{}\<close>
 | "lang One = 1"  \<comment> \<open>{[]}\<close>
-| "lang (Atom a) = {[a]}"
+| "lang (Sym f) = {[a]| a. f a}"
 | "lang (Plus x y) = lang x + lang y"
 | "lang (Times x y) = lang x \<cdot> lang y"
 | "lang (Star x) = (lang x)\<^sup>\<star>"
