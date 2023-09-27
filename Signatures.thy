@@ -50,8 +50,16 @@ order in, e.g., semilattices. This class makes the definition of
 various other type classes more slick.
 \<close>
 
+class inter =
+  fixes inter :: "'a \<Rightarrow> 'a \<Rightarrow> 'a"  (infixl "\<^bsup>&" 65)
+
+
 class plus_ord = plus + ord +
   assumes less_eq_def: "x \<le> y \<longleftrightarrow> x + y = y"
+  and less_def: "x < y \<longleftrightarrow> x \<le> y \<and> x \<noteq> y"
+
+class inter_ord = inter + ord +
+  assumes less_eq_def: "x \<le> y \<longleftrightarrow> x \<^bsup>& y = x"
   and less_def: "x < y \<longleftrightarrow> x \<le> y \<and> x \<noteq> y"
 
 end
