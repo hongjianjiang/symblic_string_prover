@@ -287,8 +287,8 @@ proof
     by (metis C12 add_iso_r distrib_right join.sup.cobounded1 mult_onel)
   show two: "x\<^sup>\<star> \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
     by (metis (no_types, lifting) C11_var C12 R add_idem' mult_onel mult_oner)
-  show "\<lbrakk> 1 + x \<le> y; y \<cdot> y = y \<rbrakk> \<Longrightarrow> x\<^sup>\<star> \<le> y"
-    by (metis (no_types, lifting) C11_var R two distrib_left join.sup.bounded_iff less_eq_def mult.assoc mult.right_neutral)
+  show "\<lbrakk> 1 + x \<le> y; y \<cdot> y = y \<rbrakk> \<Longrightarrow> x\<^sup>\<star> \<le> y" 
+    by (metis (no_types, lifting) C11_var C12 R distrib_left join.le_supE mult.right_neutral plus_ord_class.less_eq_def)
 qed
 
 context B2_algebra
@@ -790,7 +790,7 @@ proof -
   have one:"(\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) \<cdot> (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) = (1 + (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV})) \<cdot> (1 + (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}))"
     by (metis (mono_tags) assms(2) conway_monoid_split)
   also have "... = 1 + (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) + ((\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) \<cdot> (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}))"
-    by (metis (lifting, no_types) calculation less_eq_def mult_isol mult_isol_equiv_subdistl mult_oner)
+    using one by fastforce
   also have "... = 1 + (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) + (\<Sum> {x\<^bsub>i \<^esub>\<cdot> x\<^bsub>j\<^esub> | i j. i\<in>UNIV \<and> j\<in>UNIV})"
     by (simp only: dioid_sum_prod finite_UNIV)
   finally have "\<Sum> {x\<^bsub>i\<^esub> |i. i \<in> UNIV} \<cdot> \<Sum> {x\<^bsub>i\<^esub> |i. i \<in> UNIV} = \<Sum> {x\<^bsub>i\<^esub> |i. i \<in> UNIV}"
