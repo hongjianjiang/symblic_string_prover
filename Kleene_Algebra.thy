@@ -13,10 +13,9 @@ begin
 subsection \<open>Left Near Kleene Algebras\<close>
 
 
-class left_near_kleene_algebra = near_dioid_one + star_op +
+class left_near_kleene_algebra = near_dioid_one + star_op  + 
   assumes star_unfoldl: "1 + x \<cdot> x\<^sup>\<star> \<le> x\<^sup>\<star>"
   and star_inductl: "z + x \<cdot> y \<le> y \<Longrightarrow> x\<^sup>\<star> \<cdot> z \<le> y"
-
 begin
 
 text \<open>First we prove two immediate consequences of the unfold
@@ -29,7 +28,8 @@ text \<open>Reflexivity of starred elements implies, by definition of the
 order, that~$1$ is an additive unit for starred elements.\<close>
 
 lemma star_plus_one [simp]: "1 + x\<^sup>\<star> = x\<^sup>\<star>"
-  using less_eq_def star_ref by blast
+  using less_eq_def star_ref 
+  by (simp add: local.join.sup.absorb2)
 
 lemma star_1l [simp]: "x \<cdot> x\<^sup>\<star> \<le> x\<^sup>\<star>"
   using star_unfoldl by auto
@@ -147,7 +147,7 @@ lemma star_subdist_var:  "x\<^sup>\<star> + y\<^sup>\<star> \<le> (x + y)\<^sup>
   using join.sup_commute star_subdist by force
 
 lemma star_iso [intro]: "x \<le> y \<Longrightarrow> x\<^sup>\<star> \<le> y\<^sup>\<star>"
-  by (metis less_eq_def star_subdist)
+  by (metis local.join.le_iff_sup star_subdist)
 
 text \<open>We now prove some more simple properties.\<close>
 
@@ -845,6 +845,8 @@ class kleene_algebra = left_kleene_algebra_zero +
   assumes star_inductr': "z + y \<cdot> x \<le> y \<Longrightarrow> z \<cdot> x\<^sup>\<star> \<le> y"
 begin
 
+print_locale kleene_algebra
+
 subclass kleene_algebra_zerol 
   by standard (simp add: star_inductr')
 
@@ -857,7 +859,7 @@ algebras.
 \<close>
 
 lemma dual_kleene_algebra:
-  "class.kleene_algebra (+) (\<odot>) 1 0 (\<le>) (<) star"
+  "class.kleene_algebra (+) (\<odot>) 1 0 (\<le>) (<) (\<^bsup>&) star"
 proof
   fix x y z :: 'a
   show "(x \<odot> y) \<odot> z = x \<odot> (y \<odot> z)"

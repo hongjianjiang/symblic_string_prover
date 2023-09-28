@@ -61,5 +61,4 @@ class plus_ord = plus + ord +
 class inter_ord = inter + ord +
   assumes less_eq_def: "x \<le> y \<longleftrightarrow> x \<^bsup>& y = x"
   and less_def: "x < y \<longleftrightarrow> x \<le> y \<and> x \<noteq> y"
-
 end

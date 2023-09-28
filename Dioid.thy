@@ -98,6 +98,7 @@ qed
 
 end (* join_semilattice *)
 
+
 subsection \<open>Join Semilattices with an Additive Unit\<close>
 
 text \<open>We now expand join semilattices by an additive unit~$0$. Is
@@ -107,6 +108,7 @@ called \emph{bounded}.\<close>
 
 class join_semilattice_zero = join_semilattice + zero +
   assumes add_zero_l [simp]: "0 + x = x"
+
 begin
 
 subclass comm_monoid_add
@@ -139,9 +141,8 @@ semirings \emph{abelian}.\<close>
 class ab_near_semiring = ab_semigroup_add + semigroup_mult +  
   assumes distrib_right' [simp]: "(x + y) \<cdot> z = x \<cdot> z + y \<cdot> z"
 
-subclass (in semiring) ab_near_semiring 
-  apply unfold_locales 
-  by (simp add: local.distrib_right)
+subclass (in semiring) ab_near_semiring
+  by (unfold_locales, metis distrib_right)
 
 class ab_pre_semiring = ab_near_semiring +
   assumes subdistl_eq: "z \<cdot> x + z \<cdot> (x + y) = z \<cdot> (x + y)"
