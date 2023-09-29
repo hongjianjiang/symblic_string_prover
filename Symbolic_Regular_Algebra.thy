@@ -12,7 +12,7 @@ notation
   inf  (infixl "\<sqinter>" 70) and
   sup  (infixl "\<squnion>" 65)
 
-class antimirow_base = star_dioid + inter_ord + boolean_algebra +
+class antimirow_base = star_dioid + sinter_ord + boolean_algebra +
   fixes alp  :: "'a set" ("\<bbbD>")
   assumes A12: "\<lbrakk>(1 \<^bsup>& a = 0); (a = b \<cdot> a + c)\<rbrakk> \<Longrightarrow> a = b\<^sup>\<star> \<cdot> c"
   assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
@@ -59,6 +59,8 @@ lemma antimirow_induct_l:
   by (metis local.A20 local.join.sup_ge1 local.less_eq_def)
 
 end
+
+
 
 
 
