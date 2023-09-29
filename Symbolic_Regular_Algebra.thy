@@ -17,7 +17,7 @@ class antimirow_base = star_dioid + inter_ord + boolean_algebra +
   assumes A12: "\<lbrakk>(1 \<^bsup>& a = 0); (a = b \<cdot> a + c)\<rbrakk> \<Longrightarrow> a = b\<^sup>\<star> \<cdot> c"
   assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
-  assumes A15: "1 \<^bsup>& a = 0"
+  assumes A15: "x \<in> \<bbbD> \<Longrightarrow> 1 \<^bsup>& x = 0"
   assumes A16: "x \<in> \<bbbD> \<Longrightarrow> 0 \<^bsup>& x = 0"
   assumes A17: "a \<^bsup>& a = a"
   assumes A18: "a \<^bsup>& b = b \<^bsup>& a"
@@ -33,11 +33,11 @@ begin
 lemma (in antimirow_base) dual_antimirow_base:
   "class.antimirow_base (minus) (uminus) (\<sqinter>) (\<le>) (<) (\<squnion>) (\<bottom>) (\<top>) (+) (\<odot>) 1 0 (star) (\<^bsup>&) (alp) " apply unfold_locales
   apply (auto simp add: opp_mult_def mult.assoc distrib_right distrib_left)
-  apply (metis local.A14 local.A15 local.annil local.mult_1_left)
-  apply (metis local.A15 local.A17)
-  apply (simp add: local.A14) apply(simp add:local.A15) 
-  using local.A14 local.A15 apply auto[1]
-  using local.A14 local.A15 apply auto[1]
+  apply (metis local.A17 local.A19 local.A20 local.A21 local.annir local.mult_1_right)
+  apply (metis local.A18 local.A20 local.A21 local.add_comm)
+  apply (simp add: local.A14)
+  apply(simp add:local.A15)
+  apply (simp add: local.A16)
   apply (simp add: local.A17)
   apply (simp add: local.A18)
   apply (simp add: local.A19)
@@ -48,5 +48,20 @@ lemma (in antimirow_base) dual_antimirow_base:
   apply (simp add: local.A24)
   by (simp add: local.A25)
 
+lemma antimirow_induct_r: 
+  assumes "y \<cdot> x + z \<le> y"
+  shows "z \<cdot> x\<^sup>\<star> \<le> y"
+  by (metis local.A20 local.join.sup_ge1 local.less_eq_def)
+
+lemma antimirow_induct_l: 
+  assumes "x \<cdot> y + z \<le> y"
+  shows "x\<^sup>\<star>\<cdot>z \<le> y"
+  by (metis local.A20 local.join.sup_ge1 local.less_eq_def)
+
 end
+
+
+
+
+
 end
