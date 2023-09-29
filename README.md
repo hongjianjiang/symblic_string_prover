@@ -1,3 +1,3 @@
 # symblic_regular_algebra
 
-extended regular algebra + boolean algebra
+Extended regular algebra + boolean algebra + prove the equivlance of regular language
