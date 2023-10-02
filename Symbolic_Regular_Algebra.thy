@@ -61,9 +61,9 @@ lemma antimirow_induct_l:
 end
 
 
+subsection \<open>Antimirow's Rewrite Rules Systems LF\<close>
 
-
-
+(*TODO*)
 
 
 end
