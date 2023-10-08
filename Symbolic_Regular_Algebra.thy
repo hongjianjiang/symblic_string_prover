@@ -12,7 +12,8 @@ notation
   inf  (infixl "\<sqinter>" 70) and
   sup  (infixl "\<squnion>" 65)
 
-class antimirow_base = star_dioid + sinter_ord + boolean_algebra +
+
+class antimirow_base = star_dioid + sinter_ord +
   fixes alp  :: "'a set" ("\<bbbD>")
   assumes A12: "\<lbrakk>(1 \<^bsup>& a = 0); (a = b \<cdot> a + c)\<rbrakk> \<Longrightarrow> a = b\<^sup>\<star> \<cdot> c"
   assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
@@ -26,12 +27,16 @@ class antimirow_base = star_dioid + sinter_ord + boolean_algebra +
   assumes A21: "a + (a \<^bsup>& b) = a"
   assumes A22: "\<lbrakk>x \<in> \<bbbD>; y \<in> \<bbbD>\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
   assumes A23: "\<lbrakk>x \<in> \<bbbD>; y \<in> \<bbbD>\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
-  assumes A24: "\<lbrakk>x \<in> \<bbbD>; y \<in> \<bbbD>\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
-  assumes A25: "\<lbrakk>x \<in> \<bbbD>; y \<in> \<bbbD>\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
+
+
+class symbolic_algebra =  antimirow_base + boolean_algebra +
+  assumes AInt: "\<lbrakk>x \<in> \<bbbD>; y \<in> \<bbbD>\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
+  assumes AUni: "\<lbrakk>x \<in> \<bbbD>; y \<in> \<bbbD>\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
 begin
 
-lemma (in antimirow_base) dual_antimirow_base:
-  "class.antimirow_base (minus) (uminus) (\<sqinter>) (\<le>) (<) (\<squnion>) (\<bottom>) (\<top>) (+) (\<odot>) 1 0 (star) (\<^bsup>&) (alp) " apply unfold_locales
+print_locale symbolic_algebra
+lemma (in symbolic_algebra) dual_symbolic_algebra:
+  "class.symbolic_algebra (minus) (uminus) (\<sqinter>) (\<le>) (<) (\<squnion>) (\<bottom>) (\<top>) (+) (\<odot>) 1 0 (star) (\<^bsup>&) (alp) " apply unfold_locales
   apply (auto simp add: opp_mult_def mult.assoc distrib_right distrib_left)
   apply (metis local.A17 local.A19 local.A20 local.A21 local.annir local.mult_1_right)
   apply (metis local.A18 local.A20 local.A21 local.add_comm)
@@ -45,15 +50,15 @@ lemma (in antimirow_base) dual_antimirow_base:
   apply (simp add: local.A21)
   apply (simp add: local.A23)
   apply (simp add: local.A22)
-  apply (simp add: local.A24)
-  by (simp add: local.A25)
+  apply (simp add: local.AInt)
+  by (simp add: local.AUni)
 
-lemma antimirow_induct_r: 
+lemma symbolic_algebra_induct_r: 
   assumes "y \<cdot> x + z \<le> y"
   shows "z \<cdot> x\<^sup>\<star> \<le> y"
   by (metis local.A20 local.join.sup_ge1 local.less_eq_def)
 
-lemma antimirow_induct_l: 
+lemma symbolic_algebra_induct_l: 
   assumes "x \<cdot> y + z \<le> y"
   shows "x\<^sup>\<star>\<cdot>z \<le> y"
   by (metis local.A20 local.join.sup_ge1 local.less_eq_def)
@@ -61,9 +66,15 @@ lemma antimirow_induct_l:
 end
 
 
+
+subsection \<open>Antimirow's axiom system consistent\<close>
+
+
+
 subsection \<open>Antimirow's Rewrite Rules Systems LF\<close>
 
 (*TODO*)
+
 
 
 end
