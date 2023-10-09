@@ -4,7 +4,7 @@ begin
 
 subsection \<open>Inter Semilattices\<close> 
 
-class inter_semilattice = sinter_ord +
+class inter_semilattice = inter_ord +
   assumes inter_assoc' [ac_simps]: "(x \<^bsup>& y) \<^bsup>& z = x \<^bsup>& (y \<^bsup>& z)"
   and inter_comm [ac_simps] : "x \<^bsup>& y = y \<^bsup>& x"
   and inter_idem [simp]: "x \<^bsup>& x = x"
@@ -17,7 +17,7 @@ lemma inter_left_idem [ac_simps]: "x \<^bsup>& (x \<^bsup>& y) = x \<^bsup>& y"
   unfolding inter_assoc' [symmetric] by simp
 
 text \<open>The definition @{term "x \<le> y \<longleftrightarrow> x \<^bsup>& y = x"} of the order is
-hidden in class @{class sinter_ord}.\<close>
+hidden in class @{class inter_ord}.\<close>
 
 subclass order
 proof

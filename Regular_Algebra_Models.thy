@@ -226,9 +226,10 @@ notation
   Sym ("\<langle>_\<rangle>") and
   Plus (infixl "+\<^sub>r" 65) and
   Times (infixl "\<cdot>\<^sub>r" 70) and
+  Inter (infixl "&\<^sub>r" 70) and
   Star ("_\<^sup>\<star>\<^sub>r" [101] 100) and
   Zero ("0\<^sub>r") and
-  One ("1\<^sub>r")
+  One ("1\<^sub>r") 
 
 fun rexp_ewp :: "'a rexp \<Rightarrow> bool" where
   "rexp_ewp 0\<^sub>r = False" |
@@ -236,6 +237,7 @@ fun rexp_ewp :: "'a rexp \<Rightarrow> bool" where
   "rexp_ewp \<langle>f\<rangle> = False" |
   "rexp_ewp (s +\<^sub>r t) = (rexp_ewp s \<or> rexp_ewp t)" |
   "rexp_ewp (s \<cdot>\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
+  "rexp_ewp (s &\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
   "rexp_ewp (s\<^sup>\<star>\<^sub>r) = True"
 
 abbreviation "ro(s) \<equiv> (if (rexp_ewp s) then 1\<^sub>r else 0\<^sub>r)"
@@ -269,8 +271,7 @@ next
   show "P(\<langle>a\<rangle>)"
     by (simp add:P_def r_lang_def, rule_tac x="\<langle>a\<rangle>" in exI, simp)
 next
-  show "P(1\<^sub>r)"
-    by (simp add:P_def r_lang_def, rule_tac x="0\<^sub>r" in exI, simp)
+  show "P(1\<^sub>r)" apply (simp add: P_def r_lang_def) apply (rule_tac x="0\<^sub>r" in exI) by simp
 next
   fix t1 t2
   assume "P(t1)" "P(t2)"
@@ -314,6 +315,18 @@ next
     done
   qed
 next
+  fix t1 t2
+  assume "P(t1)" "P(t2)"
+  then obtain t1' t2' 
+    where "t1 \<sim> ro(t1) +\<^sub>r t1'" "ro(t1') = 0\<^sub>r"
+          "t2 \<sim> ro(t2) +\<^sub>r t2'" "ro(t2') = 0\<^sub>r"
+    by (metis assms rexp.distinct(1))
+  thus "P(t1 &\<^sub>r t2)"
+    apply (subst P_def, transfer)
+    apply (rule_tac x="t1' &\<^sub>r t2'" in exI)
+    apply clarsimp
+    sledgehammer
+next
   fix s
   assume assm:"P s"
   then obtain s' where r1: "s \<sim> ro(s) +\<^sub>r s'" "ro(s') = 0\<^sub>r"
@@ -328,8 +341,8 @@ next
     also have "?r \<sim> 1\<^sub>r +\<^sub>r s' \<cdot>\<^sub>r (s')\<^sup>\<star>\<^sub>r" (is "?l \<sim> ?r")
       by (transfer, auto)
     also have "?r \<sim> ro(s\<^sup>\<star>\<^sub>r) +\<^sub>r ?t'"
-      by (metis (full_types) rexp_ewp.simps(6))
-    finally show ?thesis
+      by simp
+      finally show ?thesis
       by (metis assms lang.simps(6) r1(1) r2 r_lang.abs_eq r_lang.rep_eq)
   qed
 qed

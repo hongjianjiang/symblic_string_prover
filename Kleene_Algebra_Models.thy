@@ -137,6 +137,7 @@ datatype 'a rexp =
 | Plus "'a rexp" "'a rexp"
 | Times "'a rexp" "'a rexp"
 | Star "'a rexp"
+| Inter "'a rexp" "'a rexp"
 
 text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
@@ -148,7 +149,8 @@ fun lang :: "'a rexp \<Rightarrow> 'a lan" where
 | "lang (Sym f) = {[a]| a. f a}"
 | "lang (Plus x y) = lang x + lang y"
 | "lang (Times x y) = lang x \<cdot> lang y"
-| "lang (Star x) = (lang x)\<^sup>\<star>"
+| "lang (Star x) = (lang x)\<^sup>\<star>" 
+| "lang (Inter x y) = lang x \<inter> lang y "
 
 typedef 'a reg_lan = "range lang :: 'a lan set"
   by auto
