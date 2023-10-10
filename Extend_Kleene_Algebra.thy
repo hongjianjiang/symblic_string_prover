@@ -44,12 +44,6 @@ subsection \<open>Antimirow's Axioms\<close>
 
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
-notation
-  bot ("\<bottom>") and
-  top ("\<top>") and
-  inf  (infixl "\<sqinter>" 70) and
-  sup  (infixl "\<squnion>" 65)
-
 class antimirow_base = star_dioid + ab_inter_semilattice_zero + 
   fixes alp  :: "'a set" ("\<bbbP>")
   assumes A12: "\<lbrakk>(1 \<^bsup>& a = 0); (a = b \<cdot> a + c)\<rbrakk> \<Longrightarrow> a = b\<^sup>\<star> \<cdot> c"
@@ -60,5 +54,10 @@ class antimirow_base = star_dioid + ab_inter_semilattice_zero +
   assumes A22: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
   assumes A23: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
 
+
+
+subsection \<open>Symbolic Regular Algebra's Axioms\<close>
+
+text \<open>Symbolic Regular Algebra's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
 end
