@@ -12,9 +12,9 @@ begin
 
 subsection \<open>Conway's Classical Axioms\<close>
 
-text \<open>Conway's classical axiomatisation of Regular Algebra from~\cite{Conway}.\<close>
+text \<open>Conway's classical axiomatisation of Regular Algebra from~\<^cite>\<open>"Conway"\<close>.\<close>
  
-class star_dioid = dioid_one_zero + star_op + plus_ord 
+class star_dioid = dioid_one_zero + star_op + plus_ord
 
 class conway_dioid = star_dioid +
   assumes C11: "(x + y)\<^sup>\<star> = (x\<^sup>\<star> \<cdot> y)\<^sup>\<star> \<cdot> x\<^sup>\<star>"
@@ -39,7 +39,7 @@ proof -
 qed
 
 lemma (in conway_dioid) dual_conway_dioid:
-  "class.conway_dioid inter (+) (\<odot>) 1 0 (\<le>) (<)   star"
+  "class.conway_dioid (+) (\<odot>) 1 0 (\<le>) (<) star"
 proof
   fix x y z :: 'a
   show "(x \<odot> y) \<odot> z = x \<odot>(y \<odot> z)"
@@ -66,7 +66,7 @@ proof
     by (metis C12 mult.assoc opp_mult_def)
 qed
 
-lemma (in strong_conway_dioid) dual_strong_conway_dioid: "class.strong_conway_dioid inter ((+) ) ((\<odot>) ) 1 0 (\<le>) (<)   star"
+lemma (in strong_conway_dioid) dual_strong_conway_dioid: "class.strong_conway_dioid ((+) ) ((\<odot>) ) 1 0 (\<le>) (<) star"
 proof
   fix x y z :: 'a
   show "(x \<odot> y) \<odot> z = x \<odot> (y \<odot> z)"
@@ -173,8 +173,7 @@ proof -
   have "sum (power.power 1 (\<odot>) x) {m..n + m} = sum ((^) x) {m..n + m}"
     by (induction n, simp_all add:opp_power_def)
   thus ?thesis
-    sorry
-  (*by (simp add: dioid_one_zero.powsum_def[of _ _ _ _ "(\<le>)" "(<)"] dual_dioid_one_zero powsum_def)*)
+    by (simp add: dioid_one_zero.powsum_def[of _ _ _ _ "(\<le>)" "(<)"] dual_dioid_one_zero powsum_def)
 qed
 
 end
@@ -196,7 +195,7 @@ proof -
   finally show ?thesis .
 qed
 
-lemma C_algebra: "class.C_algebra inter (+) (\<odot>) (1::'a::C_algebra) 0 (\<le>) (<)   star"
+lemma C_algebra: "class.C_algebra (+) (\<odot>) (1::'a::C_algebra) 0 (\<le>) (<) star"
 proof
   fix x y :: 'a and n :: nat
   show "(x + y)\<^sup>\<star> = (x\<^sup>\<star> \<odot> y)\<^sup>\<star> \<odot> x\<^sup>\<star>"
@@ -211,7 +210,7 @@ qed (simp_all add: opp_mult_def mult.assoc distrib_left)
 
 subsection \<open>Boffa's Axioms\<close>
 
-text \<open>Boffa's two axiomatisations of Regular Algebra from~\cite{Boffa1,Boffa2}.\<close>
+text \<open>Boffa's two axiomatisations of Regular Algebra from~\<^cite>\<open>"Boffa1" and "Boffa2"\<close>.\<close>
 
 class B1_algebra = conway_dioid +
   assumes R: "x \<cdot> x = x \<Longrightarrow> x\<^sup>\<star> = 1 + x"
@@ -222,7 +221,7 @@ class B2_algebra = star_dioid +
   and B23: "\<lbrakk> 1 + x \<le> y; y \<cdot> y = y \<rbrakk> \<Longrightarrow> x\<^sup>\<star> \<le> y"
 
 lemma (in B1_algebra) B1_algebra:
-  "class.B1_algebra inter (+) (\<odot>) 1 0 (\<le>) (<)   star"
+  "class.B1_algebra (+) (\<odot>) 1 0 (\<le>) (<) star"
 proof 
   fix x y z :: 'a
   show "x \<odot> y \<odot> z = x \<odot> (y \<odot> z)"
@@ -252,7 +251,7 @@ proof
 qed
 
 lemma (in B2_algebra) B2_algebra:
-  "class.B2_algebra inter (+) (\<odot>) 1 0 (\<le>) (<)   star"
+  "class.B2_algebra (+) (\<odot>) 1 0 (\<le>) (<) star"
 proof
   fix x y z :: 'a
   show "x \<odot> y \<odot> z = x \<odot> (y \<odot> z)"
@@ -288,8 +287,8 @@ proof
     by (metis C12 add_iso_r distrib_right join.sup.cobounded1 mult_onel)
   show two: "x\<^sup>\<star> \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
     by (metis (no_types, lifting) C11_var C12 R add_idem' mult_onel mult_oner)
-  show "\<lbrakk> 1 + x \<le> y; y \<cdot> y = y \<rbrakk> \<Longrightarrow> x\<^sup>\<star> \<le> y" 
-    by (metis (no_types, lifting) C11_var C12 R distrib_left join.le_supE mult.right_neutral plus_ord_class.less_eq_def)
+  show "\<lbrakk> 1 + x \<le> y; y \<cdot> y = y \<rbrakk> \<Longrightarrow> x\<^sup>\<star> \<le> y"
+    by (metis C11_var C12 R join.sup.absorb_iff2 join.sup.bounded_iff mult_oner subdistl)
 qed
 
 context B2_algebra
@@ -792,7 +791,7 @@ proof -
     by (metis (mono_tags) assms(2) conway_monoid_split)
   also have "... = 1 + (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) + ((\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) \<cdot> (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}))"
     using one by fastforce
-  also have "... = 1 + (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) + (\<Sum> {x\<^bsub>i \<^esub>\<cdot> x\<^bsub>j\<^esub> | i j. i\<in>UNIV \<and> j\<in>UNIV})"
+ also have "... = 1 + (\<Sum> {x\<^bsub>i\<^esub>|i. i\<in>UNIV}) + (\<Sum> {x\<^bsub>i \<^esub>\<cdot> x\<^bsub>j\<^esub> | i j. i\<in>UNIV \<and> j\<in>UNIV})"
     by (simp only: dioid_sum_prod finite_UNIV)
   finally have "\<Sum> {x\<^bsub>i\<^esub> |i. i \<in> UNIV} \<cdot> \<Sum> {x\<^bsub>i\<^esub> |i. i \<in> UNIV} = \<Sum> {x\<^bsub>i\<^esub> |i. i \<in> UNIV}"
     apply (simp only:)
@@ -831,7 +830,7 @@ class C3r_algebra = conway_dioid +
   assumes C3r:  "y \<cdot> x \<le> y \<Longrightarrow> y \<cdot> x\<^sup>\<star> \<le> y"
 
 sublocale C1r_algebra \<subseteq> dual: C1l_algebra
-  inter "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
+  "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
 proof
   fix x y z :: 'a
   show "x \<odot> y \<odot> z = x \<odot> (y \<odot> z)"
@@ -863,7 +862,7 @@ proof
 qed
 
 sublocale C2r_algebra \<subseteq> dual: C2l_algebra
-  inter "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
+  "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
 proof
   fix x y z :: 'a
   show "x \<odot> y \<odot> z = x \<odot> (y \<odot> z)"
@@ -893,7 +892,7 @@ proof
 qed
 
 sublocale C3r_algebra \<subseteq> dual: C3l_algebra
-  inter "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)"   "star"
+  "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
 proof 
   fix x y z :: 'a
   show "x \<odot> y \<odot> z = x \<odot> (y \<odot> z)"
@@ -1031,7 +1030,7 @@ sublocale C3_algebra \<subseteq> C2_algebra ..
 
 subsection \<open>Kozen's Kleene Algebras\<close>
 
-text \<open>Kozen's Kleene Algebras~\cite{Kozen,Kozensemi}.\<close>
+text \<open>Kozen's Kleene Algebras~\<^cite>\<open>"Kozen" and "Kozensemi"\<close>.\<close>
 
 class Kl_base = star_dioid +
   assumes Kl: "1 + x \<cdot> x\<^sup>\<star> \<le> x\<^sup>\<star>"
@@ -1056,7 +1055,7 @@ class K1_algebra = K1l_algebra + K1r_algebra
 class K2_algebra = K2l_algebra + K2r_algebra
 
 sublocale K1r_algebra \<subseteq> dual: K1l_algebra
-  inter "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
+  "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
 proof
   fix x y z :: 'a
   show  "x \<odot> y \<odot> z = x \<odot> (y \<odot> z)"
@@ -1115,7 +1114,7 @@ sublocale K1_algebra \<subseteq> C0_algebra
 sublocale C0_algebra \<subseteq> K1l_algebra ..
 
 sublocale K2r_algebra \<subseteq> dual: K2l_algebra
-  inter "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
+  "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star"
 proof 
   fix x y z :: 'a
   show  "x \<odot> y \<odot> z = x \<odot> (y \<odot> z)"
@@ -1164,7 +1163,7 @@ sublocale K2_algebra \<subseteq> koz: kleene_algebra
 
 subsection \<open>Salomaa's Axioms\<close>
 
-text \<open>Salomaa's axiomatisations of Regular Algebra~\cite{Salomaa}.\<close>
+text \<open>Salomaa's axiomatisations of Regular Algebra~\<^cite>\<open>"Salomaa"\<close>.\<close>
 
 class salomaa_base = star_dioid +
   fixes ewp :: "'a \<Rightarrow> bool" 
@@ -1191,7 +1190,7 @@ class Sl_algebra = salomaa_base +
 class S_algebra = Sl_algebra + Sr_algebra
 
 sublocale Sl_algebra \<subseteq> dual: Sr_algebra
-  inter "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star" "ewp"
+  "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star" "ewp"
 proof
   fix x y z :: 'a
   show "(x \<odot> y) \<odot> z = x \<odot> (y \<odot> z)"
@@ -1284,6 +1283,6 @@ sublocale Sr_algebra \<subseteq> salomaa_conj_r
 
 lemma (in salomaa_conj_r) "(\<not> ewp y) \<and> (x = x \<cdot> y + z) \<longrightarrow> x = z \<cdot> y\<^sup>\<star>"
   (*nitpick [expect=genuine] -- "3-element counterexample"*)
-  oops
+oops
 
 end

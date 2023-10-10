@@ -15,7 +15,7 @@ dioids. These so far include the powerset dioid over a monoid,
 languages, binary relations, sets of traces, sets paths (in a graph),
 as well as the min-plus and the max-plus semirings. Most of these
 models are taken from an article about Kleene algebras with
-domain~\cite{desharnaismoellerstruth06kad}.
+domain~\<^cite>\<open>"desharnaismoellerstruth06kad"\<close>.
 
 The advantage of formally linking these models with the abstract
 axiomatisations of dioids is that all abstract theorems are
@@ -61,9 +61,6 @@ begin
   definition plus_set_def:
     "A + B = A \<union> B"
 
-  definition inter_set_def:
-    "A \<^bsup>& B = A \<inter> B"
-
   instance
   proof
     fix X Y Z :: "'a set"
@@ -91,15 +88,6 @@ begin
       by (simp add: Un_absorb plus_set_def)
     show "X \<cdot> (Y + Z) = X \<cdot> Y + X \<cdot> Z"
       by (auto simp add: plus_set_def c_prod_def)
-    show "X \<^bsup>& Y \<^bsup>& Z = X \<^bsup>& (Y \<^bsup>& Z)"
-      by (simp add: Dioid_Models.inter_set_def Int_assoc)
-    show "(X + Y) \<^bsup>& Z = X \<^bsup>& Z + Y \<^bsup>& Z "
-      apply (simp add: plus_set_def inter_set_def) 
-      by blast
-    show "X \<^bsup>& Y = Y \<^bsup>& X"
-      by (simp add: Dioid_Models.inter_set_def Int_commute)
-    show "X \<^bsup>& X = X"
-      by (simp add: inter_set_def)
   qed
 
 end (* instantiation *)
@@ -144,8 +132,7 @@ for free.\<close>
 
 type_synonym 'a lan = "'a list set"
 
-interpretation lan_dioid: dioid_one_zero "(\<^bsup>&)" "(+)" "(\<cdot>)" "1::'a lan" "0" "(\<subseteq>)" "(\<subset>)"
-  apply unfold_locales done
+interpretation lan_dioid: dioid_one_zero "(+)" "(\<cdot>)" "1::'a lan" "0" "(\<subseteq>)" "(\<subset>)" ..
 
 
 subsection \<open>Relation Dioids\<close>
@@ -155,8 +142,7 @@ composition, the identity relation, the empty relation and set
 inclusion form dioids. Due to the well developed relation library of
 Isabelle this is entirely trivial.\<close>
 
-
-interpretation rel_dioid: dioid_one_zero "(\<inter>)" "(\<union>)" "(O)" Id "{}" "(\<subseteq>)" "(\<subset>)"
+interpretation rel_dioid: dioid_one_zero "(\<union>)" "(O)" Id "{}" "(\<subseteq>)" "(\<subset>)"
   by (unfold_locales, auto)
 
 interpretation rel_monoid: monoid_mult Id "(O)" ..
@@ -165,7 +151,7 @@ interpretation rel_monoid: monoid_mult Id "(O)" ..
 subsection \<open>Trace Dioids\<close>
 
 text \<open>Traces have been considered, for instance, by
-Kozen~\cite{kozen00hoare} in the context of Kleene algebras with
+Kozen~\<^cite>\<open>"kozen00hoare"\<close> in the context of Kleene algebras with
 tests. Intuitively, a trace is an execution sequence of a labelled
 transition system from some state to some other state, in which state
 labels and action labels alternate, and which begin and end with a
@@ -282,7 +268,7 @@ under union and the complex product based on trace fusion together
 with the empty set of traces and the set of traces of length one forms
 a dioid.\<close>
 
-interpretation trace_dioid: dioid_one_zero "(\<inter>)" "(\<union>)" t_prod t_one t_zero "(\<subseteq>)" "(\<subset>)"  
+interpretation trace_dioid: dioid_one_zero "(\<union>)" t_prod t_one t_zero "(\<subseteq>)" "(\<subset>)"
 apply unfold_locales
 apply (auto simp add: t_prod_def t_one_def t_zero_def t_fusion_def)
 apply (metis last_append)
@@ -441,7 +427,7 @@ qed
 text \<open>Finally we show that sets of paths under union, the complex
 product, the unit set and the empty set form a dioid.\<close>
 
-interpretation path_dioid: dioid_one_zero "(\<inter>)" "(\<union>)" "(\<cdot>)" p_one "{}" "(\<subseteq>)" "(\<subset>)"  
+interpretation path_dioid: dioid_one_zero "(\<union>)" "(\<cdot>)" p_one "{}" "(\<subseteq>)" "(\<subset>)"
 proof
   fix x y z :: "'a path set"
   show  "x \<union> y \<union> z = x \<union> (y \<union> z)"
@@ -470,14 +456,6 @@ proof
     by auto
   show "x \<cdot> (y \<union> z) = x \<cdot> y \<union> x \<cdot> z"
     by (fact p_prod_distl)
-  show  "x \<inter> y \<inter> z = x \<inter> (y \<inter> z)"
-    by (simp add: inf_assoc)
-  show "(x \<union> y) \<inter> z = x \<inter> z \<union> y \<inter> z"
-    by (simp add: inf_sup_distrib2)
-  show "x \<inter> y = y \<inter> x"
-    by (simp add: inf_commute)
-  show "x \<inter> x = x"
-    by simp
 qed
 
 no_notation
@@ -549,7 +527,7 @@ lemma pp_prod_iff:
   "w \<in> X\<cdot>Y \<longleftrightarrow> (\<exists>u v. w = pp_fusion u v \<and> u \<in> X \<and> v \<in> Y \<and> pp_last u = pp_first v)"
   by (unfold pp_prod_def) auto
 
-interpretation ppath_dioid: dioid_one_zero "(\<inter>)" "(\<union>)" "(\<cdot>)" pp_one "{}" "(\<subseteq>)" "(\<subset>)"  
+interpretation ppath_dioid: dioid_one_zero "(\<union>)" "(\<cdot>)" pp_one "{}" "(\<subseteq>)" "(\<subset>)"
 proof
   fix x y z :: "'a ppath set"
   show "x \<union> y \<union> z = x \<union> (y \<union> z)"
@@ -578,20 +556,12 @@ proof
     by auto
   show "x \<cdot> (y \<union> z) = x \<cdot> y \<union> x \<cdot> z"
     by (auto simp add: pp_prod_def)
-  show  "x \<inter> y \<inter> z = x \<inter> (y \<inter> z)"
-    by (simp add: inf_assoc)
-  show "(x \<union> y) \<inter> z = x \<inter> z \<union> y \<inter> z"
-    by (simp add: Int_Un_distrib2)
-  show "x \<inter> y = y \<inter> x"
-    by (simp add: inf_commute)
-  show "x \<inter> x = x"
-    by simp
 qed
 
 no_notation
   pp_prod (infixl "\<cdot>" 70)
 
-(*subsection \<open>The Distributive Lattice Dioid\<close>
+subsection \<open>The Distributive Lattice Dioid\<close>
 
 text \<open>A bounded distributive lattice is a distributive lattice with
 a least and a greatest element. Using Isabelle's lattice theory file
@@ -884,5 +854,5 @@ begin
   qed
 
 end (* instantiation *)
-*)
+
 end

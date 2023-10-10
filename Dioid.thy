@@ -127,7 +127,7 @@ subsection \<open>Near Semirings\<close>
 
 text \<open>\emph{Near semirings} (also called seminearrings) are
 generalisations of near rings to the semiring case. They have been
-studied, for instance, in G.~Pilz's book~\cite{pilz83nearrings} on
+studied, for instance, in G.~Pilz's book~\<^cite>\<open>"pilz83nearrings"\<close> on
 near rings. According to his definition, a near semiring consists of
 an additive and a multiplicative semigroup that interact via a single
 distributivity law (left or right). The additive semigroup is not
@@ -156,8 +156,8 @@ are a starting point for process algebras.
 
 By modelling variants of dioids as variants of semirings in which
 addition is idempotent we follow the tradition of
-Birkhoff~\cite{birkhoff67lattices}, but deviate from the definitions
-in Gondran and Minoux's book~\cite{gondran10graphs}.\<close>
+Birkhoff~\<^cite>\<open>"birkhoff67lattices"\<close>, but deviate from the definitions
+in Gondran and Minoux's book~\<^cite>\<open>"gondran10graphs"\<close>.\<close>
 
 class near_dioid = ab_near_semiring + plus_ord +
   assumes add_idem' [simp]: "x + x = x"
@@ -207,8 +207,8 @@ end (* near_dioid *)
 text \<open>We now make multiplication in near dioids left isotone, which
 is equivalent to left subdistributivity, as we have seen. The
 corresponding structures form the basis of probabilistic Kleene
-algebras~\cite{mciverweber05pka} and game
-algebras~\cite{venema03gamealgebra}. We are not aware that these
+algebras~\<^cite>\<open>"mciverweber05pka"\<close> and game
+algebras~\<^cite>\<open>"venema03gamealgebra"\<close>. We are not aware that these
 structures have a special name, so we baptise them \emph{pre-dioids}.
 
 We do not explicitly define pre-semirings since we have no application
@@ -429,35 +429,7 @@ class pre_dioid_one_zero = pre_dioid_one_zerol + ab_near_semiring_one_zero
 
 subclass (in pre_dioid_one_zero) near_dioid_one_zero ..
 
-
-subsection \<open>Inter Semilattices\<close> 
-
-class inter_semilattice = inter +
-  assumes inter_assoc' [ac_simps]: "(x \<^bsup>& y) \<^bsup>& z = x \<^bsup>& (y \<^bsup>& z)"
-  and inter_comm [ac_simps] : "x \<^bsup>& y = y \<^bsup>& x"
-  and inter_idem [simp]: "x \<^bsup>& x = x"
-begin
-
-lemma inter_left_comm [ac_simps]: "y \<^bsup>& (x \<^bsup>& z) = x \<^bsup>& (y \<^bsup>& z)"
-  using local.inter_assoc' local.inter_comm by auto
-
-lemma inter_left_idem [ac_simps]: "x \<^bsup>& (x \<^bsup>& y) = x \<^bsup>& y"
-  unfolding inter_assoc' [symmetric] by simp
-
-sublocale inter: semigroup inter
-  by standard (fact inter_assoc')
-
-end (* inter_semilattice *)
-
-
-
-class ab_near_semiring_inter = ab_semigroup_add + inter_semilattice +  
-  assumes distrib_right_inter' [simp]: "(x + y) \<^bsup>& z = (x \<^bsup>& z) + (y \<^bsup>& z)"
-
-
-class dioid_one_zero = dioid_one_zerol + ab_near_semiring_one_zero + ab_near_semiring_inter 
-
-print_locale dioid_one_zero
+class dioid_one_zero = dioid_one_zerol + ab_near_semiring_one_zero
 
 subclass (in dioid_one_zero) pre_dioid_one_zero ..
 
@@ -479,7 +451,7 @@ lemma (in semiring_1) dual_semiring_1:
   by unfold_locales (auto simp add: opp_mult_def mult.assoc distrib_right distrib_left)
 
 lemma (in dioid_one_zero) dual_dioid_one_zero:
-  "class.dioid_one_zero  (\<^bsup>&) (+) (\<odot>) 1 0 (\<le>) (<)"
+  "class.dioid_one_zero (+) (\<odot>) 1 0 (\<le>) (<)"
   by unfold_locales (auto simp add: opp_mult_def mult.assoc distrib_right distrib_left)
 
 subsection \<open>Selective Near Semirings\<close>
@@ -508,7 +480,7 @@ subclass linorder
 
 end (*selective_near_semiring*)
 
-class selective_semiring = selective_near_semiring + semiring_one_zero + ab_near_semiring_inter
+class selective_semiring = selective_near_semiring + semiring_one_zero
 
 begin
 
