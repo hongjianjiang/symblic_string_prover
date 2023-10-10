@@ -18,9 +18,9 @@ abbreviation w_length :: "'a list \<Rightarrow> nat" ( "|_|")
 definition l_ewp :: "'a lan \<Rightarrow> bool" where
   "l_ewp X \<longleftrightarrow> {[]} \<subseteq> X"
 
-interpretation lan_kozen: K2_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)" "star" ..
+interpretation lan_kozen: K2_algebra inter "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)"   "star" ..
 
-interpretation lan_boffa: B1_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)" "star" ..
+interpretation lan_boffa: B1_algebra inter "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)"  "star" ..
 
 lemma length_lang_pow_lb:
   assumes "\<forall>x\<in>X. |x| \<ge> k" "x \<in> X^n" 
@@ -198,7 +198,7 @@ proof -
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
 
-interpretation lan_salomaa_l: Sl_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)" "star" "l_ewp"
+interpretation lan_salomaa_l: Sl_algebra inter "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)"   "star" "l_ewp"
 proof
   fix x y z :: "'a lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
@@ -211,7 +211,7 @@ proof
     by (metis arden_l)
 qed
 
-interpretation lan_salomaa_r: Sr_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)" "star" "l_ewp"
+interpretation lan_salomaa_r: Sr_algebra inter "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)" "star" "l_ewp"
 proof
   fix x y z :: "'a lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
@@ -253,23 +253,30 @@ abbreviation r_sim :: "'a rexp \<Rightarrow> 'a rexp \<Rightarrow> bool" (infix 
 declare Rep_reg_lan [simp]
 declare Rep_reg_lan_inverse [simp]
 declare Abs_reg_lan_inverse [simp]
+ 
 
 lemma rexp_ewp_l_ewp: "l_ewp (lang x) = rexp_ewp x"
 proof (induct x)
   case (Star x) thus ?case
     by (simp, metis lan_salomaa_l.EWP left_near_kleene_algebra_class.star_plus_one)
-qed (simp_all add:l_ewp_def zero_set_def one_set_def one_list_def plus_set_def c_prod_def times_list_def)
+qed (simp_all add:l_ewp_def zero_set_def one_set_def one_list_def plus_set_def c_prod_def times_list_def inter_set_def )
 
 theorem regexp_ewp:
   defines P_def: "P(t) \<equiv> \<exists> t'. t \<sim> ro(t) +\<^sub>r t' \<and> ro(t') = 0\<^sub>r"
   shows "P t"
 proof (induct t)
-  show "P(0\<^sub>r)"
-    by (simp add:P_def r_lang_def, rule_tac x="0\<^sub>r" in exI, simp)
+  show "P(0\<^sub>r)" 
+    apply (simp add:P_def r_lang_def)
+    apply (rule_tac x="0\<^sub>r" in exI) 
+    apply simp 
+    done 
 next
   fix a
   show "P(\<langle>a\<rangle>)"
-    by (simp add:P_def r_lang_def, rule_tac x="\<langle>a\<rangle>" in exI, simp)
+    apply (simp add:P_def r_lang_def)
+    apply (rule_tac x="\<langle>a\<rangle>" in exI)
+    apply (simp)
+    done
 next
   show "P(1\<^sub>r)" apply (simp add: P_def r_lang_def) apply (rule_tac x="0\<^sub>r" in exI) by simp
 next
@@ -300,11 +307,11 @@ next
       by (transfer, simp)
     also have "?r \<sim> ro(t1) \<cdot>\<^sub>r ro(t2) +\<^sub>r ro(t1) \<cdot>\<^sub>r t2' +\<^sub>r t1' \<cdot>\<^sub>r ro(t2) +\<^sub>r t1' \<cdot>\<^sub>r t2'" (is "?l \<sim> ?r")
       apply (transfer, unfold lang.simps)
-      apply (simp only: distrib_right' semiring_class.distrib_left)
-      apply (metis (opaque_lifting, no_types) join_semilattice_class.add_comm semiring_class.combine_common_factor)
-    done
+      apply (simp only: distrib_right' semiring_class.distrib_left) 
+      by (simp add: join.sup_assoc join.sup_commute)
     also have "?r \<sim> ro(t1 \<cdot>\<^sub>r t2) +\<^sub>r ro(t1) \<cdot>\<^sub>r t2' +\<^sub>r t1' \<cdot>\<^sub>r ro(t2) +\<^sub>r t1' \<cdot>\<^sub>r t2'" (is "?l \<sim> ?r")
-      by (transfer, simp)
+      apply transfer
+      by simp
     also have "?r \<sim> ro(t1 \<cdot>\<^sub>r t2) +\<^sub>r ?t'"
       apply (transfer, unfold lang.simps)
       apply (metis (mono_tags) join_semilattice_class.add_assoc')
@@ -318,14 +325,33 @@ next
   fix t1 t2
   assume "P(t1)" "P(t2)"
   then obtain t1' t2' 
-    where "t1 \<sim> ro(t1) +\<^sub>r t1'" "ro(t1') = 0\<^sub>r"
-          "t2 \<sim> ro(t2) +\<^sub>r t2'" "ro(t2') = 0\<^sub>r"
-    by (metis assms rexp.distinct(1))
+    where t1: "t1 \<sim> ro(t1) +\<^sub>r t1'" "ro(t1') = 0\<^sub>r" and
+          t2: "t2 \<sim> ro(t2) +\<^sub>r t2'" "ro(t2') = 0\<^sub>r"
+      by (metis assms rexp.distinct(1))
   thus "P(t1 &\<^sub>r t2)"
-    apply (subst P_def, transfer)
-    apply (rule_tac x="t1' &\<^sub>r t2'" in exI)
-    apply clarsimp
-    sledgehammer
+  proof -
+    let ?t' = "ro(t1) &\<^sub>r t2' +\<^sub>r t1' &\<^sub>r ro(t2) +\<^sub>r t1' &\<^sub>r t2'"
+    from t1 t2 have r1: "ro(?t') = 0\<^sub>r"
+      by (auto)
+    from t1 t2 have "t1 &\<^sub>r t2 \<sim> (ro(t1) +\<^sub>r t1') &\<^sub>r (ro(t2) +\<^sub>r t2')" (is "?l \<sim> ?r")
+      by (transfer, simp)
+    also have "?r \<sim> ro(t1) &\<^sub>r ro(t2) +\<^sub>r ro(t1) &\<^sub>r t2' +\<^sub>r t1' &\<^sub>r ro(t2) +\<^sub>r t1' &\<^sub>r t2'" (is "?l \<sim> ?r")
+      apply (transfer, unfold lang.simps)
+      apply (simp only: distrib_right_inter' semiring_class.distrib_left) 
+      by (smt (verit, best) distrib_right_inter' inter_comm join.sup_assoc)
+    also have "?r \<sim> ro(t1 &\<^sub>r t2) +\<^sub>r ro(t1) &\<^sub>r t2' +\<^sub>r t1' &\<^sub>r ro(t2) +\<^sub>r t1' &\<^sub>r t2'" (is "?l \<sim> ?r")
+      apply transfer
+      apply simp 
+      by (smt (verit, ccfv_SIG) distrib_right_inter' inter_comm join.sup_assoc join.sup_commute lan_salomaa_l.dual.dual.add_zeror)
+    also have "?r \<sim> ro(t1 &\<^sub>r t2) +\<^sub>r ?t'"
+      apply (transfer, unfold lang.simps)
+      apply (metis (mono_tags) join_semilattice_class.add_assoc')
+    done
+    finally show ?thesis using r1
+      apply (unfold P_def)
+      apply (rule_tac x="?t'" in exI, simp)
+    done
+  qed
 next
   fix s
   assume assm:"P s"
@@ -408,5 +434,4 @@ theorem arden_regexp_r:
   shows "x \<sim> z \<cdot>\<^sub>r y\<^sup>\<star>\<^sub>r"
   using assms
   by transfer (metis lan_salomaa_r.Ar lang.simps(4) lang.simps(5) lang.simps(6) rexp.distinct(1) rexp_ewp_l_ewp)
-
 end

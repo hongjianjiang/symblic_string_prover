@@ -121,7 +121,7 @@ subsection \<open>Language Kleene Algebras\<close>
 
 text \<open>We now specialise this fact to languages.\<close>
 
-interpretation lan_kleene_algebra: kleene_algebra "(+)" "(\<cdot>)" "1::'a lan" "0" "(\<subseteq>)" "(\<subset>)" star ..
+interpretation lan_kleene_algebra: kleene_algebra inter "(+)" "(\<cdot>)" "1::'a lan" "0" "(\<subseteq>)" "(\<subset>)"   star ..
 
 
 subsection \<open>Regular Languages\<close>
@@ -150,8 +150,8 @@ fun lang :: "'a rexp \<Rightarrow> 'a lan" where
 | "lang (Plus x y) = lang x + lang y"
 | "lang (Times x y) = lang x \<cdot> lang y"
 | "lang (Star x) = (lang x)\<^sup>\<star>" 
-| "lang (Inter x y) = lang x \<inter> lang y "
-
+| "lang (Inter x y) = lang x \<^bsup>& lang y "
+                                          
 typedef 'a reg_lan = "range lang :: 'a lan set"
   by auto
 
@@ -185,6 +185,10 @@ begin
   lift_definition times_reg_lan :: "'a reg_lan \<Rightarrow> 'a reg_lan \<Rightarrow> 'a reg_lan"
     is times
     by (metis (opaque_lifting, no_types) image_iff lang.simps(5) rangeI)
+
+  lift_definition inter_reg_lan :: "'a reg_lan \<Rightarrow> 'a reg_lan \<Rightarrow> 'a reg_lan"
+    is inter
+    using lang.simps(7) by blast
 
   instance
   proof
@@ -223,11 +227,19 @@ begin
       by transfer (metis star_inductl)
     show "z + y \<cdot> x \<le> y \<Longrightarrow> z \<cdot> x\<^sup>\<star> \<le> y"
       by transfer (metis star_inductr)
+    show "x \<^bsup>& y \<^bsup>& z = x \<^bsup>& (y \<^bsup>& z)"
+      by (metis (mono_tags, lifting) Rep_reg_lan_inject inter.assoc inter_reg_lan.rep_eq)
+    show "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
+      by (metis (mono_tags, lifting) Kleene_Algebra_Models.plus_reg_lan.rep_eq Rep_reg_lan_inject distrib_right_inter' inter_reg_lan.rep_eq)
+    show "x \<^bsup>& y = y \<^bsup>& x"
+      by (metis Rep_reg_lan_inverse inter_comm inter_reg_lan.rep_eq)
+    show "x \<^bsup>& x = x"
+      by (metis Rep_reg_lan_inject inter_idem inter_reg_lan.rep_eq)
   qed
 
 end  (* instantiation *)
 
-interpretation reg_lan_kleene_algebra: kleene_algebra "(+)" "(\<cdot>)" "1::'a reg_lan" 0 "(\<le>)" "(<)" star ..
+interpretation reg_lan_kleene_algebra: kleene_algebra inter "(+)" "(\<cdot>)" "1::'a reg_lan" 0 "(\<le>)" "(<)"   star ..
 
 
 subsection \<open>Relation Kleene Algebras\<close>
@@ -254,7 +266,7 @@ by (metis rel_star_def relcomp_UNION_distrib)
 lemma rel_star_contr: "X^* O Y = (\<Union>n. (rel_dioid.power X n) O Y)"
 by (metis rel_star_def relcomp_UNION_distrib2)
 
-interpretation rel_kleene_algebra: kleene_algebra "(\<union>)" "(O)" Id "{}" "(\<subseteq>)" "(\<subset>)" rtrancl
+interpretation rel_kleene_algebra: kleene_algebra "(\<inter>)" "(\<union>)" "(O)" Id "{}" "(\<subseteq>)" "(\<subset>)"   rtrancl
 proof
   fix x y z :: "'a rel"
   show "Id \<union> x O x\<^sup>* \<subseteq> x\<^sup>*"
@@ -288,7 +300,7 @@ lemma t_star_contl: "t_prod X (t_star Y) = (\<Union>n. t_prod X (trace_dioid.pow
 lemma t_star_contr: "t_prod (t_star X) Y = (\<Union>n. t_prod (trace_dioid.power X n) Y)"
   by (auto simp add: t_star_elim t_prod_def)
 
-interpretation trace_kleene_algebra: kleene_algebra "(\<union>)" t_prod t_one t_zero "(\<subseteq>)" "(\<subset>)" t_star
+interpretation trace_kleene_algebra: kleene_algebra "(\<inter>)" "(\<union>)" t_prod t_one t_zero "(\<subseteq>)" "(\<subset>)"  t_star
 proof
   fix X Y Z :: "('a, 'b) trace set"
   show "t_one \<union> t_prod X (t_star X) \<subseteq> t_star X"
@@ -335,7 +347,7 @@ apply (auto simp add: p_prod_def p_star_elim)
 apply (metis p_star_elim)
 done
 
-interpretation path_kleene_algebra: kleene_algebra "(\<union>)" p_prod p_one "{}" "(\<subseteq>)" "(\<subset>)" p_star
+interpretation path_kleene_algebra: kleene_algebra "(\<inter>)" "(\<union>)" p_prod p_one "{}" "(\<subseteq>)" "(\<subset>)"    p_star
 proof
   fix X Y Z :: "'a path set"
   show "p_one \<union> p_prod X (p_star X) \<subseteq> p_star X"
@@ -370,7 +382,7 @@ by (auto simp add: pp_prod_def pp_star_elim)
 lemma pp_star_contr: "pp_prod (pp_star X) Y = (\<Union>n. pp_prod (ppath_dioid.power X n) Y)"
 by (auto simp add: pp_prod_def pp_star_elim)
 
-interpretation ppath_kleene_algebra: kleene_algebra "(\<union>)" pp_prod pp_one "{}" "(\<subseteq>)" "(\<subset>)" pp_star
+interpretation ppath_kleene_algebra: kleene_algebra "(\<inter>)" "(\<union>)" pp_prod pp_one "{}" "(\<subseteq>)" "(\<subset>)"   pp_star
 proof
   fix X Y Z :: "'a ppath set"
   show "pp_one \<union> pp_prod X (pp_star X) \<subseteq> pp_star X"
@@ -391,7 +403,7 @@ proof
 qed
 
 
-subsection \<open>The Distributive Lattice Kleene Algebra\<close>
+(*subsection \<open>The Distributive Lattice Kleene Algebra\<close>
 
 text \<open>In the case of bounded distributive lattices, the star maps
 all elements to to the maximal element.\<close>
@@ -440,5 +452,5 @@ begin
   qed
 
 end (* instantiation *)
-
+*)
 end

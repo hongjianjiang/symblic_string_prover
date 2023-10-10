@@ -429,7 +429,35 @@ class pre_dioid_one_zero = pre_dioid_one_zerol + ab_near_semiring_one_zero
 
 subclass (in pre_dioid_one_zero) near_dioid_one_zero ..
 
-class dioid_one_zero = dioid_one_zerol + ab_near_semiring_one_zero
+
+subsection \<open>Inter Semilattices\<close> 
+
+class inter_semilattice = inter +
+  assumes inter_assoc' [ac_simps]: "(x \<^bsup>& y) \<^bsup>& z = x \<^bsup>& (y \<^bsup>& z)"
+  and inter_comm [ac_simps] : "x \<^bsup>& y = y \<^bsup>& x"
+  and inter_idem [simp]: "x \<^bsup>& x = x"
+begin
+
+lemma inter_left_comm [ac_simps]: "y \<^bsup>& (x \<^bsup>& z) = x \<^bsup>& (y \<^bsup>& z)"
+  using local.inter_assoc' local.inter_comm by auto
+
+lemma inter_left_idem [ac_simps]: "x \<^bsup>& (x \<^bsup>& y) = x \<^bsup>& y"
+  unfolding inter_assoc' [symmetric] by simp
+
+sublocale inter: semigroup inter
+  by standard (fact inter_assoc')
+
+end (* inter_semilattice *)
+
+
+
+class ab_near_semiring_inter = ab_semigroup_add + inter_semilattice +  
+  assumes distrib_right_inter' [simp]: "(x + y) \<^bsup>& z = (x \<^bsup>& z) + (y \<^bsup>& z)"
+
+
+class dioid_one_zero = dioid_one_zerol + ab_near_semiring_one_zero + ab_near_semiring_inter 
+
+print_locale dioid_one_zero
 
 subclass (in dioid_one_zero) pre_dioid_one_zero ..
 
@@ -451,7 +479,7 @@ lemma (in semiring_1) dual_semiring_1:
   by unfold_locales (auto simp add: opp_mult_def mult.assoc distrib_right distrib_left)
 
 lemma (in dioid_one_zero) dual_dioid_one_zero:
-  "class.dioid_one_zero (+) (\<odot>) 1 0 (\<le>) (<)"
+  "class.dioid_one_zero  (\<^bsup>&) (+) (\<odot>) 1 0 (\<le>) (<)"
   by unfold_locales (auto simp add: opp_mult_def mult.assoc distrib_right distrib_left)
 
 subsection \<open>Selective Near Semirings\<close>
@@ -480,7 +508,7 @@ subclass linorder
 
 end (*selective_near_semiring*)
 
-class selective_semiring = selective_near_semiring + semiring_one_zero
+class selective_semiring = selective_near_semiring + semiring_one_zero + ab_near_semiring_inter
 
 begin
 

@@ -68,6 +68,7 @@ qed
 
 end (* inter_semilattice *)
 
+
 class inter_semiring = inter_semilattice + ab_semigroup_add + 
   assumes distrib_left [simp]: "x \<^bsup>& (y + z) = (x \<^bsup>& z) + (y \<^bsup>& z)"
 

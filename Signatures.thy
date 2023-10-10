@@ -51,7 +51,7 @@ various other type classes more slick.
 \<close>
 
 class inter =
-  fixes inter :: "'a \<Rightarrow> 'a \<Rightarrow> 'a"  (infixl "\<^bsup>&" 65)
+  fixes inter :: "'a \<Rightarrow> 'a \<Rightarrow> 'a"  (infixl "\<^bsup>&" 70)
 
 
 class plus_ord = plus + ord +
