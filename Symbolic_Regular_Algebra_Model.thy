@@ -1,5 +1,5 @@
-theory Extend_Kleene_Algebra_Model
-  imports Extend_Kleene_Algebra Kleene_Algebra_Models
+theory Symbolic_Regular_Algebra_Model
+  imports Symbolic_Regular_Algebra Kleene_Algebra_Models
 begin
 
 
@@ -135,19 +135,19 @@ begin
     show "z + y \<cdot> x \<le> y \<Longrightarrow> z \<cdot> x\<^sup>\<star> \<le> y"
       by (simp add: kleene_algebra_zerol_class.star_inductr local.less_eq_reg_lan.rep_eq local.plus_reg_lan.rep_eq local.star_reg_lan.rep_eq local.times_reg_lan.rep_eq)
     show "x \<^bsup>& y \<^bsup>& z = x \<^bsup>& (y \<^bsup>& z)" 
-      by (metis (mono_tags, lifting) Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject inter_assoc' inter_reg_lan.rep_eq)
+      by (metis (mono_tags, lifting) Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject inter_assoc' inter_reg_lan.rep_eq)
     show "x \<^bsup>& y = y \<^bsup>& x"
-      by (metis Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inverse inter_comm inter_reg_lan.rep_eq)
+      by (metis Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inverse inter_comm inter_reg_lan.rep_eq)
     show "x \<^bsup>& x = x"
-      by (metis Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject inter_idem inter_reg_lan.rep_eq)
+      by (metis Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject inter_idem inter_reg_lan.rep_eq)
     show "0 \<^bsup>& x = 0"
-      by (smt (verit) Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inverse Extend_Kleene_Algebra_Model.zero_reg_lan.rep_eq inter_reg_lan.rep_eq inter_zerol)
+      by (smt (verit) Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inverse Symbolic_Regular_Algebra_Model.zero_reg_lan.rep_eq inter_reg_lan.rep_eq inter_zerol)
     show "x \<^bsup>& 0 = 0"
-      by (smt (verit, del_insts) Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject \<open>0 \<^bsup>& x = 0\<close> inter_comm inter_reg_lan.rep_eq)
+      by (smt (verit, del_insts) Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject \<open>0 \<^bsup>& x = 0\<close> inter_comm inter_reg_lan.rep_eq)
     show "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
-      by (metis (mono_tags, lifting) Extend_Kleene_Algebra_Model.plus_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject ex_distrib_right inter_reg_lan.rep_eq)
+      by (metis (mono_tags, lifting) Symbolic_Regular_Algebra_Model.plus_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject ex_distrib_right inter_reg_lan.rep_eq)
     show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
-      by (metis (mono_tags, lifting) Extend_Kleene_Algebra_Model.plus_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject ex_distrib_left inter_reg_lan.rep_eq)
+      by (metis (mono_tags, lifting) Symbolic_Regular_Algebra_Model.plus_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject ex_distrib_left inter_reg_lan.rep_eq)
   qed
 
 end  (* instantiation *)
@@ -345,8 +345,7 @@ proof -
   show ?thesis using one and two
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
-
-interpretation lan_antimirow_l: Al_algebra inter 0 "(+)" "(\<cdot>)" "1 :: 'a lan"  "(\<subseteq>)" "(\<subset>)" "star" "{}"
+interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
 proof
   fix x y z a b c:: "'a lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
@@ -379,7 +378,7 @@ proof
     by simp
 qed
 
-interpretation lan_antimirow_r: Ar_algebra inter 0 "(+)" "(\<cdot>)" "1 :: 'a lan"  "(\<subseteq>)" "(\<subset>)" "star" "{}"
+interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
 proof
   fix x y z :: "'a lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
@@ -389,7 +388,7 @@ proof
 qed
 
 
-subsection \<open>Regular Language Model of Salomaa Algebra\<close>
+subsection \<open>Regular Language Model of Antimirow Algebra\<close>
 
 notation
   Sym ("\<langle>_\<rangle>") and
@@ -426,7 +425,7 @@ declare Abs_reg_lan_inverse [simp]
 lemma rexp_ewp_l_ewp: "l_ewp (lang x) = rexp_ewp x"
 proof (induct x)
   case (Star x) thus ?case
-    by (metis Extend_Kleene_Algebra_Model.lang.simps(6) kleene_algebra_class.dual.star_plus_one l_ewp_def one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp.simps(7))
+    by (metis Symbolic_Regular_Algebra_Model.lang.simps(6) kleene_algebra_class.dual.star_plus_one l_ewp_def one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp.simps(7))
 qed (simp_all add:l_ewp_def zero_set_def one_set_def one_list_def plus_set_def c_prod_def times_list_def inter_set_def)
 
 theorem regexp_ewp:
@@ -560,22 +559,22 @@ next
     ultimately show ?thesis
       apply (transfer, auto)
       using zero_set_def apply auto[1]
-      apply (smt (verit, del_insts) Extend_Kleene_Algebra_Model.lang.simps(2) Extend_Kleene_Algebra_Model.rexp.simps(7) join.sup_assoc kleene_algebra_class.dual.star_one kleene_algebra_class.dual.star_plus_one l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp)
+      apply (smt (verit, del_insts) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.simps(7) join.sup_assoc kleene_algebra_class.dual.star_one kleene_algebra_class.dual.star_plus_one l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp)
        apply (simp add: zero_set_def)
       by (metis lan_antimirow_l.dual.EWP)
   qed
 next
   fix x y z :: "'a reg_lan"
   show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
-    by (metis Extend_Kleene_Algebra_Model.one_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject Extend_Kleene_Algebra_Model.times_reg_lan.rep_eq inter_reg_lan.rep_eq lan_antimirow_l.A13)
+    by (metis Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq inter_reg_lan.rep_eq lan_antimirow_l.A13)
 next 
   fix x :: "'a reg_lan"
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
-    by (metis Extend_Kleene_Algebra_Model.plus_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inverse Int_Un_eq(4) ex_distrib_right inter_comm inter_idem inter_reg_lan.rep_eq inter_set_def kleene_algebra_class.dual.star_plus_one plus_set_def)
+    by (metis Symbolic_Regular_Algebra_Model.plus_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inverse Int_Un_eq(4) ex_distrib_right inter_comm inter_idem inter_reg_lan.rep_eq inter_set_def kleene_algebra_class.dual.star_plus_one plus_set_def)
 next 
   fix x y z :: "'a reg_lan"
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
-    by (metis Extend_Kleene_Algebra_Model.one_reg_lan.rep_eq Extend_Kleene_Algebra_Model.plus_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject Extend_Kleene_Algebra_Model.star_reg_lan.rep_eq Extend_Kleene_Algebra_Model.times_reg_lan.rep_eq Extend_Kleene_Algebra_Model.zero_reg_lan.rep_eq arden_r inter_empty inter_reg_lan.rep_eq)  
+    by (metis Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.plus_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.star_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.zero_reg_lan.rep_eq arden_r inter_empty inter_reg_lan.rep_eq)  
 next
   fix x ::"'a reg_lan"
   show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
@@ -605,7 +604,7 @@ instance proof
 next
   fix x y z :: "'a reg_lan"
   show " 1 \<^bsup>& y = 0 \<Longrightarrow> x = y \<cdot> x + z \<Longrightarrow> x = y\<^sup>\<star> \<cdot> z"
-    by (metis Extend_Kleene_Algebra_Model.one_reg_lan.rep_eq Extend_Kleene_Algebra_Model.plus_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject Extend_Kleene_Algebra_Model.star_reg_lan.rep_eq Extend_Kleene_Algebra_Model.times_reg_lan.rep_eq Extend_Kleene_Algebra_Model.zero_reg_lan.rep_eq arden_l inter_empty inter_reg_lan.rep_eq)
+    by (metis Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.plus_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.star_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.zero_reg_lan.rep_eq arden_l inter_empty inter_reg_lan.rep_eq)
 qed
 end
 
@@ -621,5 +620,5 @@ theorem arden_regexp_r:
   assumes "ro(y) = 0\<^sub>r" "x \<sim> x \<cdot>\<^sub>r y +\<^sub>r z" 
   shows "x \<sim> z \<cdot>\<^sub>r y\<^sup>\<star>\<^sub>r"
   using assms
-  by (metis Extend_Kleene_Algebra_Model.lang.simps(4) Extend_Kleene_Algebra_Model.lang.simps(5) Extend_Kleene_Algebra_Model.lang.simps(6) Extend_Kleene_Algebra_Model.rexp.simps(7) arden_r r_lang.abs_eq r_lang.rep_eq rexp_ewp_l_ewp)
+  by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.rexp.simps(7) arden_r r_lang.abs_eq r_lang.rep_eq rexp_ewp_l_ewp)
 end

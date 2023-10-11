@@ -1,11 +1,11 @@
-(* Title:      From Semilattices to Dioids
+(* Title:      Symbolic_Regular_Algebra
    Author:     Hongjian Jiang
    Maintainer: Hongjian Jiang <hongjian.jiang at cs.rptu.de>
 *)
 
 section \<open>Dioids\<close>
 
-theory Extend_Kleene_Algebra
+theory Symbolic_Regular_Algebra
 imports Regular_Algebras Dioid_Models Kleene_Algebra_Models
 begin
 
@@ -24,26 +24,21 @@ class ab_inter_semilattice_zero = inter_semilattice_zero + ab_semigroup_add +
 
 
 class ex_kleene_algebra = kleene_algebra + ab_inter_semilattice_zero 
-begin
 
-lemma dual_ex_kleene_algebra:
-  "class.ex_kleene_algebra inter 0 (+) (\<odot>) 1  (\<le>) (<) star"
-proof
-  fix x y z :: 'a
-  show "1 + x \<odot> x\<^sup>\<star> \<le> x\<^sup>\<star>"
-    by (metis opp_mult_def order_refl star_slide_var star_unfoldl_eq)
+lemma (in ex_kleene_algebra) dual_ex_kleene_algebra: "class.ex_kleene_algebra ((+) ) ((\<odot>) ) 1 0 (\<le>) (<) star inter"
+proof 
+  fix x y z
+  show "1 + x \<odot> x\<^sup>\<star> \<le> x\<^sup>\<star>" 
+    by simp
   show "z + x \<odot> y \<le> y \<Longrightarrow> x\<^sup>\<star> \<odot> z \<le> y"
     by (simp add: local.dual.star_inductl_var)
   show "z + y \<odot> x \<le> y \<Longrightarrow> z \<odot> x\<^sup>\<star> \<le> y"
     by (simp add: local.opp_mult_def local.star_inductl_var)
-  qed
-
-end (* extend kleene_algebra *)
+qed
 
 subsection \<open>Antimirow's Axioms\<close>
 
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
-
 
 class antimirow_base = star_dioid + ab_inter_semilattice_zero + 
   fixes alp  :: "'a set" ("\<bbbP>")
@@ -66,8 +61,10 @@ class Ar_algebra = antimirow_base +
 
 class A_algebra = Al_algebra + Ar_algebra
 
+print_locale Ar_algebra
+
 sublocale Al_algebra \<subseteq> dual: Ar_algebra
-  inter 0 "(+)" "(\<odot>)" "1"  "(\<le>)" "(<)" "star" "alp"
+    "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star" "inter" "alp"
 proof 
   fix x y z a b c
   show "x \<odot> y\<odot> z= x \<odot> (y\<odot> z)"
