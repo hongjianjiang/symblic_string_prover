@@ -44,9 +44,11 @@ subsection \<open>Antimirow's Axioms\<close>
 
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
+
 class antimirow_base = star_dioid + ab_inter_semilattice_zero + 
   fixes alp  :: "'a set" ("\<bbbP>")
-  assumes A12: "\<lbrakk>(1 \<^bsup>& a = 0); (a = b \<cdot> a + c)\<rbrakk> \<Longrightarrow> a = b\<^sup>\<star> \<cdot> c"
+  assumes S11: "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
+  assumes EWP : "1 \<^bsup>& x \<noteq> 0 \<longleftrightarrow> (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
@@ -54,7 +56,124 @@ class antimirow_base = star_dioid + ab_inter_semilattice_zero +
   assumes A22: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
   assumes A23: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
 
+class Al_algebra = antimirow_base +
+  assumes S12l: "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
+  and Al : "\<lbrakk> 1 \<^bsup>& y = 0; x = y \<cdot> x + z \<rbrakk> \<Longrightarrow> x = y\<^sup>\<star> \<cdot> z"
 
+class Ar_algebra = antimirow_base +
+  assumes S12r: "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
+  and Ar : "\<lbrakk> 1 \<^bsup>& y = 0; x = x \<cdot> y + z \<rbrakk> \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
+
+class A_algebra = Al_algebra + Ar_algebra
+
+sublocale Al_algebra \<subseteq> dual: Ar_algebra
+  inter 0 "(+)" "(\<odot>)" "1"  "(\<le>)" "(<)" "star" "alp"
+proof 
+  fix x y z a b c
+  show "x \<odot> y\<odot> z= x \<odot> (y\<odot> z)"
+    by (simp add: local.mult_assoc times.opp_mult_def)
+  show "(x + y) \<odot> z = x \<odot> z + y \<odot> z"
+    by (simp add: local.distrib_left local.opp_mult_def)
+  show "1 \<odot> x = x" 
+    by (simp add: local.opp_mult_def)
+  show "x \<odot> 1 = x"
+    by (simp add: local.opp_mult_def)
+  show "0 + x = x"
+    by simp
+  show "0 \<odot> x = 0" 
+    by (simp add: local.opp_mult_def)
+  show "x \<odot> 0 = 0"
+    by (simp add: local.opp_mult_def)
+  show "x + x = x"
+    by simp
+  show "x \<odot> (y + z) = x \<odot> y + x \<odot> z"
+    by (simp add: local.opp_mult_def)
+  show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
+    by (simp add: local.S11)
+  show "(1 \<^bsup>& x \<noteq> 0) = (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
+    by (simp add: local.EWP)
+  show "1 \<^bsup>& (x \<odot> y) = 1 \<^bsup>& x \<^bsup>& y"
+    using local.A13 local.inter_assoc' local.inter_comm local.opp_mult_def by auto
+  show "1 \<^bsup>& x\<^sup>\<star> = 1"
+    by (simp add: local.A14)
+  show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
+    by (simp add: local.A15)
+  show "x \<in> \<bbbP> \<Longrightarrow> 0 \<^bsup>& x = 0"
+    by simp
+  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
+    by (simp add: local.A23 local.opp_mult_def)
+  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
+    by (simp add: local.A22 local.opp_mult_def)
+  show "1 + x\<^sup>\<star> \<odot> x = x\<^sup>\<star>"
+    by (simp add: local.S12l local.opp_mult_def)
+  show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<odot> y + z \<Longrightarrow> x = z \<odot> y\<^sup>\<star>"
+    by (simp add: local.Al local.opp_mult_def)
+qed
+
+context Al_algebra
+begin
+
+lemma kozen_induct_l:
+  assumes "x \<cdot> y + z \<le> y"
+  shows "x\<^sup>\<star> \<cdot> z \<le> y"
+proof (cases "1 \<^bsup>& x = 0")
+  case True
+  thus ?thesis 
+    by (metis assms local.Al local.join.le_sup_iff local.join.sup.absorb2 local.mult_isol)
+next
+  case False
+  then show ?thesis 
+  proof -
+    assume "1 \<^bsup>& x \<noteq> 0"
+    then obtain x' where assm1: "x = 1 + x'" and assm2: "1 \<^bsup>& x' = 0"
+      by (metis EWP) 
+    have "y = x\<^sup>\<star> \<cdot> (z + y)"
+      using \<open>\<And>thesis. (\<And>x'. \<lbrakk>x = 1 + x'; 1 \<^bsup>& x' = 0\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> assms local.Al local.S11 local.distrib_right local.join.le_supE local.join.sup.absorb2 by fastforce
+    thus ?thesis
+      by (metis local.subdistl)
+  qed
+qed
+end
+
+context Ar_algebra
+begin
+
+lemma kozen_induct_r: 
+  assumes "y \<cdot> x + z \<le> y"
+  shows "z \<cdot> x\<^sup>\<star> \<le> y"
+proof (cases "1 \<^bsup>& x = 0")
+  case True
+  then show ?thesis 
+    by (metis assms local.Ar local.join.le_sup_iff local.join.sup.absorb2 local.mult_isor)
+next
+  case False
+  then show ?thesis 
+  proof -
+    assume "1 \<^bsup>& x \<noteq> 0"
+    then obtain x' where assm1: "x = 1 + x'" and assm2: "1 \<^bsup>& x' = 0"
+      by (metis EWP) 
+    have "y = (z + y) \<cdot>  x\<^sup>\<star> "
+      using \<open>\<And>thesis. (\<And>x'. \<lbrakk>x = 1 + x'; 1 \<^bsup>& x' = 0\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> assms local.Ar local.S11 local.distrib_left local.join.le_supE local.join.sup.absorb2 by fastforce
+    thus ?thesis
+      by (metis local.join.sup.cobounded1 local.mult_isor)
+  qed
+qed
+end
+
+
+sublocale Ar_algebra \<subseteq> K2r_algebra
+  by unfold_locales (metis S12r order_refl, metis add_comm kozen_induct_r) 
+
+sublocale Ar_algebra \<subseteq> K1r_algebra ..
+
+sublocale Al_algebra \<subseteq> K2l_algebra
+  by unfold_locales (metis S12l order_refl, metis add_comm kozen_induct_l) 
+
+sublocale Al_algebra \<subseteq> K1l_algebra ..
+
+sublocale A_algebra \<subseteq> K1_algebra ..
+
+sublocale A_algebra \<subseteq> K2_algebra ..
 
 subsection \<open>Symbolic Regular Algebra's Axioms\<close>
 

@@ -29,6 +29,8 @@ begin
   qed
 end (* instantiation *)
 
+
+
 subsection \<open>Regular Languages\<close>
 
 datatype 'a rexp =
@@ -52,7 +54,11 @@ fun lang :: "'a rexp \<Rightarrow> 'a lan" where
 | "lang (Times x y) = lang x \<cdot> lang y"
 | "lang (Star x) = (lang x)\<^sup>\<star>" 
 | "lang (Inter x y) = lang x \<^bsup>& lang y "
-                                          
+
+
+lemma "lang One = {[]}"
+  by (simp add: one_list_def one_set_def)
+
 typedef 'a reg_lan = "range lang :: 'a lan set"
   by auto
 
@@ -154,6 +160,11 @@ abbreviation w_length :: "'a list \<Rightarrow> nat" ( "|_|")
 
 definition l_ewp :: "'a lan \<Rightarrow> bool" where
   "l_ewp X \<longleftrightarrow> {[]} \<subseteq> X"
+
+
+lemma inter_empty:"l_ewp X \<Longrightarrow> 1 \<^bsup>& X \<noteq> 0"
+  by (smt (verit) Int_Un_eq(2) Int_commute UNIV_not_empty ab_near_semiring_one_class.mult_onel ab_near_semiring_one_zerol_class.annil inter_set_def join.sup_commute l_ewp_def one_list_def one_set_def plus_ord_class.less_eq_def plus_set_def sup_inf_distrib1 zero_set_def)
+
 
 interpretation lan_kozen: K2_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)" "star" ..
 
@@ -335,15 +346,280 @@ proof -
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
 
-print_locale antimirow_base
-
-interpretation lan_antimirow_base: antimirow_base inter 0 "(+)" "(\<cdot>)" "1 :: 'a lan" "(\<subseteq>)" "(\<subset>)" "star" "{}"
+interpretation lan_antimirow_l: Al_algebra inter 0 "(+)" "(\<cdot>)" "1 :: 'a lan"  "(\<subseteq>)" "(\<subset>)" "star" "{}"
 proof
-  
+  fix x y z a b c:: "'a lan"
+  show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
+    by (metis kleene_algebra_class.dual.star2)
+  show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
+    by (metis kleene_algebra_class.star_unfoldl_eq)
+  show "1 \<^bsup>& x\<^sup>\<star> = 1"
+    by (metis Int_Un_eq(4) Int_commute inf_assoc inter_set_def kleene_algebra_class.dual.star_plus_one plus_set_def sup_inf_distrib1)
+  show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
+    apply(simp add: one_set_def inter_set_def c_prod_def one_list_def times_list_def)
+    apply(cases "x = {}")
+    apply simp 
+    apply(cases "y = {}") 
+    apply simp 
+    by auto   
+  show "(1 \<^bsup>& x \<noteq> 0) = (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
+    apply(simp add: one_set_def inter_set_def c_prod_def one_list_def times_list_def)
+    apply(cases "[] \<in> x")
+    apply (metis (no_types, opaque_lifting) Set.set_insert Un_insert_right add.right_neutral disjoint_insert(2) inf_bot_right inf_commute join.sup_commute plus_set_def zero_set_def)
+    by (metis Un_insert_left disjoint_insert(2) inf_bot_right inf_commute insertCI plus_set_def zero_set_def)
+  show "1 \<^bsup>& y = 0 \<Longrightarrow> x = y \<cdot> x + z \<Longrightarrow> x = y\<^sup>\<star> \<cdot> z"
+    using arden_l inter_empty by blast
+  show "x \<in> {} \<Longrightarrow> 1 \<^bsup>& x = 0"
+    by simp
+  show "x \<in> {} \<Longrightarrow> 0 \<^bsup>& x = 0"
+    by simp
+  show "x \<in> {} \<Longrightarrow> y \<in> {} \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+    by auto
+  show "x \<in> {} \<Longrightarrow> y \<in> {} \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+    by simp
+qed
+
+interpretation lan_antimirow_r: Ar_algebra inter 0 "(+)" "(\<cdot>)" "1 :: 'a lan"  "(\<subseteq>)" "(\<subset>)" "star" "{}"
+proof
+  fix x y z :: "'a lan"
+  show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
+    by (metis kleene_algebra_class.star_unfoldr_eq)
+  show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
+    using arden_r inter_empty by blast
 qed
 
 
+subsection \<open>Regular Language Model of Salomaa Algebra\<close>
 
+notation
+  Sym ("\<langle>_\<rangle>") and
+  Plus (infixl "+\<^sub>r" 65) and
+  Times (infixl "\<cdot>\<^sub>r" 70) and
+  Inter (infixl "&\<^sub>r" 70) and
+  Star ("_\<^sup>\<star>\<^sub>r" [101] 100) and
+  Zero ("0\<^sub>r") and
+  One ("1\<^sub>r")
 
+fun rexp_ewp :: "'a rexp \<Rightarrow> bool" where
+  "rexp_ewp 0\<^sub>r = False" |
+  "rexp_ewp 1\<^sub>r = True" |
+  "rexp_ewp \<langle>a\<rangle> = False" |
+  "rexp_ewp (s +\<^sub>r t) = (rexp_ewp s \<or> rexp_ewp t)" |
+  "rexp_ewp (s \<cdot>\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
+  "rexp_ewp (s &\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
+  "rexp_ewp (s\<^sup>\<star>\<^sub>r) = True"
 
+abbreviation "ro(s) \<equiv> (if (rexp_ewp s) then 1\<^sub>r else 0\<^sub>r)"
+
+lift_definition r_ewp :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" .
+
+lift_definition r_lang :: "'a rexp \<Rightarrow> 'a reg_lan"  is "lang"
+  by (simp)
+
+abbreviation r_sim :: "'a rexp \<Rightarrow> 'a rexp \<Rightarrow> bool" (infix "\<sim>" 50) where
+  "p \<sim> q \<equiv> r_lang p = r_lang q"
+
+declare Rep_reg_lan [simp]
+declare Rep_reg_lan_inverse [simp]
+declare Abs_reg_lan_inverse [simp]
+
+lemma rexp_ewp_l_ewp: "l_ewp (lang x) = rexp_ewp x"
+proof (induct x)
+  case (Star x) thus ?case
+    by (metis Extend_Kleene_Algebra_Model.lang.simps(6) kleene_algebra_class.dual.star_plus_one l_ewp_def one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp.simps(7))
+qed (simp_all add:l_ewp_def zero_set_def one_set_def one_list_def plus_set_def c_prod_def times_list_def inter_set_def)
+
+theorem regexp_ewp:
+  defines P_def: "P(t) \<equiv> \<exists> t'. t \<sim> ro(t) +\<^sub>r t' \<and> ro(t') = 0\<^sub>r"
+  shows "P t"
+proof (induct t)
+  show "P(0\<^sub>r)"
+    by (simp add:P_def r_lang_def, rule_tac x="0\<^sub>r" in exI, simp)
+next
+  fix a
+  show "P(\<langle>a\<rangle>)"
+    by (simp add:P_def r_lang_def, rule_tac x="\<langle>a\<rangle>" in exI, simp)
+next
+  show "P(1\<^sub>r)"
+    by (simp add:P_def r_lang_def, rule_tac x="0\<^sub>r" in exI, simp)
+next
+  fix t1 t2
+  assume "P(t1)" "P(t2)"
+  then obtain t1' t2' 
+    where "t1 \<sim> ro(t1) +\<^sub>r t1'" "ro(t1') = 0\<^sub>r"
+          "t2 \<sim> ro(t2) +\<^sub>r t2'" "ro(t2') = 0\<^sub>r"
+    by (metis assms rexp.distinct(1))
+  thus "P(t1 +\<^sub>r t2)"
+    apply (subst P_def, transfer)
+    apply (rule_tac x="t1' +\<^sub>r t2'" in exI)
+    apply clarsimp
+    by (metis (no_types, lifting) add.left_commute join.sup_assoc join.sup_left_idem rexp.distinct(2))
+ next
+  fix t1 t2
+  assume "P(t1)" "P(t2)"
+  then obtain t1' t2' 
+    where t1: "t1 \<sim> ro(t1) +\<^sub>r t1'" "ro(t1') = 0\<^sub>r" and
+          t2: "t2 \<sim> ro(t2) +\<^sub>r t2'" "ro(t2') = 0\<^sub>r"
+      by (metis assms rexp.distinct(1))
+  thus "P(t1 \<cdot>\<^sub>r t2)"
+  proof -
+    let ?t' = "ro(t1) \<cdot>\<^sub>r t2' +\<^sub>r t1' \<cdot>\<^sub>r ro(t2) +\<^sub>r t1' \<cdot>\<^sub>r t2'"
+    from t1 t2 have r1: "ro(?t') = 0\<^sub>r"
+      by (auto)
+    from t1 t2 have "t1 \<cdot>\<^sub>r t2 \<sim> (ro(t1) +\<^sub>r t1') \<cdot>\<^sub>r (ro(t2) +\<^sub>r t2')" (is "?l \<sim> ?r")
+      by (transfer, simp)
+    also have "?r \<sim> ro(t1) \<cdot>\<^sub>r ro(t2) +\<^sub>r ro(t1) \<cdot>\<^sub>r t2' +\<^sub>r t1' \<cdot>\<^sub>r ro(t2) +\<^sub>r t1' \<cdot>\<^sub>r t2'" (is "?l \<sim> ?r")
+      apply (transfer, unfold lang.simps)
+      apply (simp only: distrib_right' semiring_class.distrib_left)
+      apply (metis (opaque_lifting, no_types) join_semilattice_class.add_comm semiring_class.combine_common_factor)
+    done
+    also have "?r \<sim> ro(t1 \<cdot>\<^sub>r t2) +\<^sub>r ro(t1) \<cdot>\<^sub>r t2' +\<^sub>r t1' \<cdot>\<^sub>r ro(t2) +\<^sub>r t1' \<cdot>\<^sub>r t2'" (is "?l \<sim> ?r")
+      by (transfer, simp)
+    also have "?r \<sim> ro(t1 \<cdot>\<^sub>r t2) +\<^sub>r ?t'"
+      apply (transfer, unfold lang.simps)
+      apply (metis (mono_tags) join_semilattice_class.add_assoc')
+    done
+    finally show ?thesis using r1
+      apply (unfold P_def)
+      apply (rule_tac x="?t'" in exI, simp)
+    done
+  qed
+next 
+  fix t1 t2
+  assume "P(t1)" "P(t2)"
+  then obtain t1' t2' 
+    where t1: "t1 \<sim> ro(t1) +\<^sub>r t1'" "ro(t1') = 0\<^sub>r" and
+          t2: "t2 \<sim> ro(t2) +\<^sub>r t2'" "ro(t2') = 0\<^sub>r"
+      by (metis assms rexp.distinct(1))
+  thus "P(t1 &\<^sub>r t2)"
+  proof -
+    let ?t' = "ro(t1) &\<^sub>r t2' +\<^sub>r t1' &\<^sub>r ro(t2) +\<^sub>r t1' &\<^sub>r t2'"
+    from t1 t2 have r1: "ro(?t') = 0\<^sub>r"
+      by (auto)
+    from t1 t2 have "t1 &\<^sub>r t2 \<sim> (ro(t1) +\<^sub>r t1') &\<^sub>r (ro(t2) +\<^sub>r t2')" (is "?l \<sim> ?r")
+      by (transfer, simp)
+    also have "?r \<sim> ro(t1) &\<^sub>r ro(t2) +\<^sub>r ro(t1) &\<^sub>r t2' +\<^sub>r t1' &\<^sub>r ro(t2) +\<^sub>r t1' &\<^sub>r t2'" (is "?l \<sim> ?r")
+      apply (transfer, unfold lang.simps)
+      by (smt (verit, best) ex_distrib_left ex_distrib_right join.sup_assoc)
+    also have "?r \<sim> ro(t1 &\<^sub>r t2) +\<^sub>r ro(t1) &\<^sub>r t2' +\<^sub>r t1' &\<^sub>r ro(t2) +\<^sub>r t1' &\<^sub>r t2'" (is "?l \<sim> ?r")
+      by (transfer, simp)
+    also have "?r \<sim> ro(t1 &\<^sub>r t2) +\<^sub>r ?t'"
+      apply (transfer, unfold lang.simps)
+      apply (metis (mono_tags) join_semilattice_class.add_assoc')
+    done
+    finally show ?thesis using r1
+      apply (unfold P_def)
+      apply (rule_tac x="?t'" in exI, simp)
+    done
+  qed
+next
+  fix s
+  assume assm:"P s"
+  then obtain s' where r1: "s \<sim> ro(s) +\<^sub>r s'" "ro(s') = 0\<^sub>r"
+    by (metis assms rexp.distinct(1))
+  thus "P (s\<^sup>\<star>\<^sub>r)"
+  proof -
+    let ?t' = "s' \<cdot>\<^sub>r (s')\<^sup>\<star>\<^sub>r"
+    have r2: "ro(?t') = 0\<^sub>r"
+      by (metis r1(2) rexp.distinct(1) rexp_ewp.simps(5))
+    from assm r1 have "(ro(s) +\<^sub>r s')\<^sup>\<star>\<^sub>r \<sim> (s')\<^sup>\<star>\<^sub>r" (is "?l \<sim> ?r")
+      by (transfer, auto)
+    also have "?r \<sim> 1\<^sub>r +\<^sub>r s' \<cdot>\<^sub>r (s')\<^sup>\<star>\<^sub>r" (is "?l \<sim> ?r")
+      by (transfer, auto)
+    also have "?r \<sim> ro(s\<^sup>\<star>\<^sub>r) +\<^sub>r ?t'"
+      by simp
+    finally show ?thesis
+      by (metis assms lang.simps(6) r1(1) r2 r_lang.abs_eq r_lang.rep_eq)
+  qed
+qed
+
+instantiation reg_lan :: (type) Ar_algebra
+begin
+
+  definition alp_reg_lan:: "'a reg_lan set" where
+  "alp_reg_lan \<equiv> {}"
+
+lift_definition ewp_reg_lan :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" .
+
+instance proof
+  fix x :: "'a reg_lan"
+  show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
+    by (metis kleene_algebra_class.dual.star2)
+next
+  fix x :: "'a reg_lan"
+  show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
+    by (metis kleene_algebra_class.star_unfoldr_eq)
+next
+  fix x :: "'a reg_lan"
+  show "(1 \<^bsup>& x \<noteq> 0) = (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
+  proof -
+    obtain t where "r_lang t = x"
+      by (transfer, auto)
+    moreover obtain t' where "t \<sim> ro(t) +\<^sub>r t'" "ro(t') = 0\<^sub>r"
+      by (metis regexp_ewp)
+    ultimately show ?thesis
+      apply (transfer, auto)
+      using zero_set_def apply auto[1]
+      apply (smt (verit, del_insts) Extend_Kleene_Algebra_Model.lang.simps(2) Extend_Kleene_Algebra_Model.rexp.simps(7) join.sup_assoc kleene_algebra_class.dual.star_one kleene_algebra_class.dual.star_plus_one l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp)
+       apply (simp add: zero_set_def)
+      by (metis lan_antimirow_l.dual.EWP)
+  qed
+next
+  fix x y z :: "'a reg_lan"
+  show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
+    by (metis Extend_Kleene_Algebra_Model.one_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject Extend_Kleene_Algebra_Model.times_reg_lan.rep_eq inter_reg_lan.rep_eq lan_antimirow_l.A13)
+next 
+  fix x :: "'a reg_lan"
+  show "1 \<^bsup>& x\<^sup>\<star> = 1"
+    by (metis Extend_Kleene_Algebra_Model.plus_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inverse Int_Un_eq(4) ex_distrib_right inter_comm inter_idem inter_reg_lan.rep_eq inter_set_def kleene_algebra_class.dual.star_plus_one plus_set_def)
+next 
+  fix x y z :: "'a reg_lan"
+  show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
+    by (metis Extend_Kleene_Algebra_Model.one_reg_lan.rep_eq Extend_Kleene_Algebra_Model.plus_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject Extend_Kleene_Algebra_Model.star_reg_lan.rep_eq Extend_Kleene_Algebra_Model.times_reg_lan.rep_eq Extend_Kleene_Algebra_Model.zero_reg_lan.rep_eq arden_r inter_empty inter_reg_lan.rep_eq)  
+next
+  fix x ::"'a reg_lan"
+  show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
+    by (simp add: alp_reg_lan_def)
+next 
+  fix x ::"'a reg_lan"
+  show "x \<in> \<bbbP> \<Longrightarrow> 0 \<^bsup>& x = 0"
+    by simp
+next 
+  fix x y a b :: "'a reg_lan"
+  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+    by (simp add: alp_reg_lan_def)
+next 
+  fix x y a b :: "'a reg_lan"
+  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+    by (simp add: alp_reg_lan_def)
+qed
+end
+
+instantiation reg_lan :: (type) Al_algebra
+begin
+
+instance proof
+  fix x :: "'a reg_lan"
+  show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
+    by (metis left_pre_kleene_algebra_class.star_unfoldl_eq)
+next
+  fix x y z :: "'a reg_lan"
+  show " 1 \<^bsup>& y = 0 \<Longrightarrow> x = y \<cdot> x + z \<Longrightarrow> x = y\<^sup>\<star> \<cdot> z"
+    by (metis Extend_Kleene_Algebra_Model.one_reg_lan.rep_eq Extend_Kleene_Algebra_Model.plus_reg_lan.rep_eq Extend_Kleene_Algebra_Model.reg_lan.Rep_reg_lan_inject Extend_Kleene_Algebra_Model.star_reg_lan.rep_eq Extend_Kleene_Algebra_Model.times_reg_lan.rep_eq Extend_Kleene_Algebra_Model.zero_reg_lan.rep_eq arden_l inter_empty inter_reg_lan.rep_eq)
+qed
+end
+
+instance reg_lan :: (type) A_algebra ..
+
+theorem arden_regexp_l: 
+  assumes "ro(y) = 0\<^sub>r" "x \<sim> y \<cdot>\<^sub>r x +\<^sub>r z" 
+  shows "x \<sim> y\<^sup>\<star>\<^sub>r \<cdot>\<^sub>r z"
+  using assms
+  by (transfer, metis arden_l lang.simps(4) lang.simps(5) lang.simps(6) rexp.distinct(1) rexp_ewp_l_ewp)
+
+theorem arden_regexp_r: 
+  assumes "ro(y) = 0\<^sub>r" "x \<sim> x \<cdot>\<^sub>r y +\<^sub>r z" 
+  shows "x \<sim> z \<cdot>\<^sub>r y\<^sup>\<star>\<^sub>r"
+  using assms
+  by (metis Extend_Kleene_Algebra_Model.lang.simps(4) Extend_Kleene_Algebra_Model.lang.simps(5) Extend_Kleene_Algebra_Model.lang.simps(6) Extend_Kleene_Algebra_Model.rexp.simps(7) arden_r r_lang.abs_eq r_lang.rep_eq rexp_ewp_l_ewp)
 end
