@@ -340,9 +340,9 @@ proof -
 qed
 
 
-interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
+interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
 proof
-  fix x y z a b c:: "nat lan"
+  fix x y z a b c:: "'a lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
     by (metis kleene_algebra_class.dual.star2)
   show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -374,7 +374,7 @@ proof
     by (simp add:c_prod_def inter_set_def times_list_def) 
 qed
 
-interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
+interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
 proof
   fix x y z :: "'a lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
@@ -534,7 +534,7 @@ begin
   definition alp_reg_lan:: "'a reg_lan set" where
   "alp_reg_lan \<equiv> {}"
 
-lift_definition ewp_reg_lan :: "nat reg_lan \<Rightarrow> bool" is "l_ewp" .
+lift_definition ewp_reg_lan :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" .
 
 instance proof
   fix x :: "'a reg_lan"
@@ -556,8 +556,8 @@ next
       apply (transfer, auto)
       using zero_set_def apply auto[1]
         apply (simp add: zero_set_def)
-      apply (smt (verit, del_insts) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.simps(7) join.sup_assoc kleene_algebra_class.dual.star_one kleene_algebra_class.dual.star_plus_one l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp)
-       apply (simp add: zero_set_def)
+        apply (metis (mono_tags, lifting) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.simps(7) empty_iff join.sup_left_idem l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp zero_set_def)
+        subgoal using zero_set_def by auto
       by (metis lan_antimirow_l.dual.EWP)
   qed
 next
@@ -567,7 +567,7 @@ next
 next 
   fix x :: "'a reg_lan"
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
-    by (metis Symbolic_Regular_Algebra_Model.plus_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inverse Int_Un_eq(4) ex_distrib_right inter_comm inter_idem inter_reg_lan.rep_eq inter_set_def kleene_algebra_class.dual.star_plus_one plus_set_def)
+    by (metis Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.star_reg_lan.rep_eq inter_reg_lan.rep_eq lan_antimirow_l.dual.A14)
 next 
   fix x y z :: "'a reg_lan"
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
@@ -578,7 +578,7 @@ next
     by (simp add: alp_reg_lan_def)
 next 
   fix x ::"'a reg_lan"
-  show "x \<in> \<bbbP> \<Longrightarrow> 0 \<^bsup>& x = 0"
+  show "0 \<^bsup>& x = 0"
     by simp
 next 
   fix x y a b :: "'a reg_lan"
@@ -622,7 +622,6 @@ theorem arden_regexp_r:
 context A_algebra begin
 
 
-lemma (in A_algebra) "(lang (Sym f)) \<^bsup>& (lang One) = (lang Zero)"
-  apply simp
 end
+
 end
