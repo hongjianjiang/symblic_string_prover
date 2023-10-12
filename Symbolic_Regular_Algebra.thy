@@ -61,8 +61,6 @@ class Ar_algebra = antimirow_base +
 
 class A_algebra = Al_algebra + Ar_algebra
 
-print_locale Ar_algebra
-
 sublocale Al_algebra \<subseteq> dual: Ar_algebra
     "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star" "inter" "alp"
 proof 
@@ -174,6 +172,17 @@ sublocale A_algebra \<subseteq> K2_algebra ..
 
 subsection \<open>Symbolic Regular Algebra's Axioms\<close>
 
+notation
+  bot ("\<bottom>") and
+  top ("\<top>") and
+  inf  (infixl "\<sqinter>" 70) and
+  sup  (infixl "\<squnion>" 65)
+
+class symbolic_algebra = A_algebra + boolean_algebra +
+  assumes inf1 : "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
+  assumes sup1 : "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
+
+print_locale symbolic_algebra
 text \<open>Symbolic Regular Algebra's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
 end
