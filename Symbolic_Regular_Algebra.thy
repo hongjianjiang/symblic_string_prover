@@ -47,7 +47,7 @@ class antimirow_base = star_dioid + ab_inter_semilattice_zero +
   assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
-  assumes A16: "x \<in> \<bbbP> \<Longrightarrow> 0 \<^bsup>& x = 0"
+  assumes A16: "0 \<^bsup>& a = 0"
   assumes A22: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
   assumes A23: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
 
@@ -93,7 +93,7 @@ proof
     by (simp add: local.A14)
   show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
     by (simp add: local.A15)
-  show "x \<in> \<bbbP> \<Longrightarrow> 0 \<^bsup>& x = 0"
+  show "0 \<^bsup>& x = 0"
     by simp
   show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
     by (simp add: local.A23 local.opp_mult_def)

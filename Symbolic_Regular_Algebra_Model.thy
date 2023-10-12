@@ -340,7 +340,7 @@ proof -
 qed
 
 
-interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{{[4]}}"
+interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
 proof
   fix x y z a b c:: "nat lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
@@ -364,22 +364,17 @@ proof
     by (metis (mono_tags, lifting) Collect_empty_eq Nil_in_shufflesI UnCI plus_set_def shuffles.simps(2) zero_set_def)
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = y \<cdot> x + z \<Longrightarrow> x = y\<^sup>\<star> \<cdot> z"
     using arden_l inter_empty by blast
-  show "x \<in> {{[4]}}  \<Longrightarrow> 1 \<^bsup>& x = 0"
-    apply (simp add:one_set_def one_list_def inter_set_def)
-    using zero_set_def by auto
-  show "x \<in> {{[4]}} \<Longrightarrow> 0 \<^bsup>& x = 0"
+  show "x \<in> {}  \<Longrightarrow> 1 \<^bsup>& x = 0"
     by simp
-  show "x \<in> {{[4]}} \<Longrightarrow> y \<in> {{[4]}} \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
-  apply (simp add:c_prod_def inter_set_def times_list_def) 
-    apply auto 
-    done
-  show "x \<in> {{[4]}} \<Longrightarrow> y \<in> {{[4]}} \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
-    apply (simp add:c_prod_def inter_set_def times_list_def) 
-    apply auto 
-    done
+  show "0 \<^bsup>& x = 0"
+    by simp
+  show "x \<in> {} \<Longrightarrow> y \<in> {} \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+    by (simp add:c_prod_def inter_set_def times_list_def) 
+  show "x \<in> {} \<Longrightarrow> y \<in> {} \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+    by (simp add:c_prod_def inter_set_def times_list_def) 
 qed
 
-interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{{[4]}}"
+interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
 proof
   fix x y z :: "'a lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
@@ -560,7 +555,7 @@ next
     ultimately show ?thesis
       apply (transfer, auto)
       using zero_set_def apply auto[1]
-             apply (simp add: zero_set_def)
+        apply (simp add: zero_set_def)
       apply (smt (verit, del_insts) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.simps(7) join.sup_assoc kleene_algebra_class.dual.star_one kleene_algebra_class.dual.star_plus_one l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp)
        apply (simp add: zero_set_def)
       by (metis lan_antimirow_l.dual.EWP)
