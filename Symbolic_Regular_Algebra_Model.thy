@@ -340,43 +340,48 @@ proof -
 qed
 
 
-interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
-proof
-  fix x y z a b c:: "'a lan"
-  show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
-    by (metis kleene_algebra_class.dual.star2)
-  show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
-    by (metis kleene_algebra_class.star_unfoldl_eq)
-  show "1 \<^bsup>& x\<^sup>\<star> = 1"
-    apply(simp add: one_set_def one_list_def inter_set_def star_def) apply auto 
-    by (metis insert_iff one_list_def one_set_def power_class.power.power_0)
-  show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
-    apply(simp add: one_set_def inter_set_def c_prod_def one_list_def times_list_def)
-    apply(cases "x = {}")
-    apply simp 
-    apply(cases "y = {}") 
-    apply simp 
-    by auto   
-  show "(1 \<^bsup>& x \<noteq> 0) = (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
-    apply(simp add: one_set_def inter_set_def c_prod_def one_list_def times_list_def)
-    apply(cases "[] \<in> x")
-    apply (smt (verit, del_insts) Set.set_insert Un_insert_right add.right_neutral empty_Collect_eq join.sup_commute plus_set_def zero_set_def)
-    by (metis (mono_tags, lifting) Collect_empty_eq Nil_in_shufflesI UnCI plus_set_def shuffles.simps(2) zero_set_def)
-  show "1 \<^bsup>& y = 0 \<Longrightarrow> x = y \<cdot> x + z \<Longrightarrow> x = y\<^sup>\<star> \<cdot> z"
-    using arden_l inter_empty by blast
-  show "x \<in> {}  \<Longrightarrow> 1 \<^bsup>& x = 0"
+instantiation set :: (monoid_mult) antimirow_base 
+begin
+
+definition alp_set: "\<bbbP> = {{}}"
+
+instance proof
+  fix a b c::"'a set"
+  show "(1 + a)\<^sup>\<star> = a\<^sup>\<star>" 
     by simp
-  show "0 \<^bsup>& x = 0"
+  show "(1 \<^bsup>& a \<noteq> 0) = (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
+    apply(simp add: one_set_def inter_set_def c_prod_def one_list_def times_list_def)
+    by (smt (z3) Collect_empty_eq Set.set_insert Un_insert_right add.right_neutral insertCI join.sup_aci(1) plus_set_def zero_set_def)
+  show "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"
+    sorry
+  show "1 \<^bsup>& a\<^sup>\<star> = 1"
+    apply(simp add:one_set_def inter_set_def star_def)
+    by (metis (mono_tags, lifting) Collect_cong one_set_def power_class.power.power_0 singletonI singleton_conv)
+  show "0 \<^bsup>& a = 0"
     by simp
-  show "x \<in> {} \<Longrightarrow> y \<in> {} \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
-    by (simp add:c_prod_def inter_set_def times_list_def) 
-  show "x \<in> {} \<Longrightarrow> y \<in> {} \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
-    by (simp add:c_prod_def inter_set_def times_list_def) 
+next
+  fix a b :: "'a set"    
+  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+    by (metis (mono_tags, opaque_lifting) ab_near_semiring_one_zerol_class.annil alp_set inter_zeror singletonD zero_set_def)
+  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+    by (metis (mono_tags, opaque_lifting) Symbolic_Regular_Algebra_Model.alp_set ab_near_semiring_one_zero_class.annir inter_zeror singletonD zero_set_def)
+  show "\<forall>x\<in>\<bbbP>. (1::'a set) \<^bsup>& x = 0" 
+    by (metis (mono_tags, opaque_lifting) alp_set inter_zeror singletonD zero_set_def)
 qed
 
-interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
+
+interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "alp"
 proof
-  fix x y z :: "'a lan"
+  fix x y z:: "'a lan"
+  show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
+    by simp
+  show "1 \<^bsup>& y = 0 \<Longrightarrow> x = y \<cdot> x + z \<Longrightarrow> x = y\<^sup>\<star> \<cdot> z"
+    using arden_l inter_empty by blast
+qed
+
+interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "alp"
+proof
+  fix x y z :: "nat lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
     by (metis kleene_algebra_class.star_unfoldr_eq)
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
@@ -527,14 +532,13 @@ next
       by (metis assms lang.simps(6) r1(1) r2 r_lang.abs_eq r_lang.rep_eq)
   qed
 qed
-
-instantiation reg_lan :: (type) Ar_algebra
+end
+    
+instantiation reg_lan :: (monoid_mult) Ar_algebra
 begin
 
-  definition alp_reg_lan:: "'a reg_lan set" where
-  "alp_reg_lan \<equiv> {}"
-
-lift_definition ewp_reg_lan :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" .
+definition alp_reg_lan::"'a Symbolic_Regular_Algebra_Model.reg_lan set" where
+  "alp_reg_lan = {}"
 
 instance proof
   fix x :: "'a reg_lan"
@@ -544,6 +548,22 @@ next
   fix x :: "'a reg_lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
     by (metis kleene_algebra_class.star_unfoldr_eq)
+next
+  fix x y z :: "'a reg_lan"
+  show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
+    by (metis A13 Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq inter_reg_lan.rep_eq)
+next 
+  fix x :: "'a reg_lan"
+  show "1 \<^bsup>& x\<^sup>\<star> = 1"
+    by (metis A14 Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.star_reg_lan.rep_eq inter_reg_lan.rep_eq)
+next 
+  fix x y z :: "'a reg_lan"
+  show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
+    by (metis Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.plus_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.star_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.zero_reg_lan.rep_eq arden_r inter_empty inter_reg_lan.rep_eq)  
+next 
+  fix x ::"'a reg_lan"
+  show "0 \<^bsup>& x = 0"
+    by simp
 next
   fix x :: "'a reg_lan"
   show "(1 \<^bsup>& x \<noteq> 0) = (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
@@ -556,42 +576,29 @@ next
       apply (transfer, auto)
       using zero_set_def apply auto[1]
         apply (simp add: zero_set_def)
-        apply (metis (mono_tags, lifting) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.simps(7) empty_iff join.sup_left_idem l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp zero_set_def)
-        subgoal using zero_set_def by auto
-      by (metis lan_antimirow_l.dual.EWP)
+        subgoal 
+          by (smt (verit, ccfv_threshold) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.lang.simps(4) Symbolic_Regular_Algebra_Model.rexp.distinct(1) antimirow_base_class.EWP empty_iff join.sup_left_idem rexp_ewp.simps(2) rexp_ewp.simps(4) rexp_ewp_l_ewp zero_set_def)
+        subgoal 
+          using zero_set_def by auto
+        subgoal 
+          by (metis antimirow_base_class.EWP)
+        done
   qed
-next
-  fix x y z :: "'a reg_lan"
-  show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
-    by (metis Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq inter_reg_lan.rep_eq lan_antimirow_l.A13)
 next 
-  fix x :: "'a reg_lan"
-  show "1 \<^bsup>& x\<^sup>\<star> = 1"
-    by (metis Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.star_reg_lan.rep_eq inter_reg_lan.rep_eq lan_antimirow_l.dual.A14)
-next 
-  fix x y z :: "'a reg_lan"
-  show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
-    by (metis Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.plus_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.star_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.zero_reg_lan.rep_eq arden_r inter_empty inter_reg_lan.rep_eq)  
-next
-  fix x ::"'a reg_lan"
-  show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
+  show "\<forall>x\<in>\<bbbP>. (1::'a reg_lan) \<^bsup>& x = 0"
     by (simp add: alp_reg_lan_def)
 next 
-  fix x ::"'a reg_lan"
-  show "0 \<^bsup>& x = 0"
-    by simp
-next 
-  fix x y a b :: "'a reg_lan"
-  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+  fix a b :: "'a reg_lan"
+  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
     by (simp add: alp_reg_lan_def)
 next 
-  fix x y a b :: "'a reg_lan"
-  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
-    by (simp add: alp_reg_lan_def)
+  fix a b :: "'a reg_lan"
+  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+    using alp_reg_lan_def by blast
 qed
 end
 
-instantiation reg_lan :: (type) Al_algebra
+instantiation reg_lan :: (monoid_mult) Al_algebra
 begin
 
 instance proof
@@ -605,7 +612,7 @@ next
 qed
 end
 
-instance reg_lan :: (type) A_algebra ..
+instance reg_lan :: (monoid_mult) A_algebra ..
 
 theorem arden_regexp_l: 
   assumes "ro(y) = 0\<^sub>r" "x \<sim> y \<cdot>\<^sub>r x +\<^sub>r z" 

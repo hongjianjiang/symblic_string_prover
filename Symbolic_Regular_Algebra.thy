@@ -46,10 +46,10 @@ class antimirow_base = star_dioid + ab_inter_semilattice_zero +
   assumes EWP : "1 \<^bsup>& x \<noteq> 0 \<longleftrightarrow> (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
-  assumes A15: "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
+  assumes A15: "\<forall>x\<in>\<bbbP>. 1 \<^bsup>& x = 0"
   assumes A16: "0 \<^bsup>& a = 0"
-  assumes A22: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
-  assumes A23: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
+  assumes A22: "\<forall>x \<in> \<bbbP>. \<forall>y \<in> \<bbbP>.(x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
+  assumes A23: "\<forall>x \<in> \<bbbP>. \<forall>y \<in> \<bbbP>.(a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
 
 class Al_algebra = antimirow_base +
   assumes S12l: "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -91,13 +91,13 @@ proof
     using local.A13 local.inter_assoc' local.inter_comm local.opp_mult_def by auto
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     by (simp add: local.A14)
-  show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
+  show "\<forall>x\<in>\<bbbP>. 1 \<^bsup>& x = 0"
     by (simp add: local.A15)
   show "0 \<^bsup>& x = 0"
     by simp
-  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
+  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
     by (simp add: local.A23 local.opp_mult_def)
-  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
+  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
     by (simp add: local.A22 local.opp_mult_def)
   show "1 + x\<^sup>\<star> \<odot> x = x\<^sup>\<star>"
     by (simp add: local.S12l local.opp_mult_def)
