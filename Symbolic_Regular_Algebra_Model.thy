@@ -34,7 +34,7 @@ subsection \<open>Regular Languages\<close>
 datatype 'a rexp =
   Zero
 | One
-| Atom 'a
+| Sym "'a \<Rightarrow> bool"
 | Plus "'a rexp" "'a rexp"
 | Times "'a rexp" "'a rexp"
 | Star "'a rexp"
@@ -47,7 +47,7 @@ adapted from there.\<close>
 fun lang :: "'a rexp \<Rightarrow> 'a lan" where
   "lang Zero = 0"  \<comment> \<open>{}\<close>
 | "lang One = 1"  \<comment> \<open>{[]}\<close>
-| "lang (Atom a) = {[a]}"
+| "lang (Sym f) = {[a]|a. f a}"
 | "lang (Plus x y) = lang x + lang y"
 | "lang (Times x y) = lang x \<cdot> lang y"
 | "lang (Star x) = (lang x)\<^sup>\<star>" 
@@ -145,22 +145,6 @@ begin
   qed
 
 end  (* instantiation *)
-
-
-context ex_kleene_algebra begin
-
-lemma "lang (Atom (2::nat)) \<^bsup>& (lang (Atom 4) + lang (Atom 5)) = lang (Atom 2) \<^bsup>& lang (Atom 4) + lang (Atom 2) \<^bsup>& lang (Atom 5)"
-  apply simp 
-  done
-
-end
-
-lemma "(x :: 'a reg_lan) \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
-  by auto
-
-lemma "(x :: 'a reg_lan) \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& y" 
-  nitpick
-  oops
 
 subsection \<open>Language Model of Antimirow Algebra\<close>
 
@@ -393,19 +377,10 @@ proof
     using arden_r inter_empty by blast
 qed
 
-
-context Ar_algebra begin
-
-lemma "\<forall>a\<in>{{[3]}}. \<forall>b\<in>{{[3]}}. lang (Atom (2::nat)) \<cdot> a \<^bsup>& (lang (Atom (2::nat)) \<cdot> b) = lang (Atom (2::nat)) \<^bsup>& lang (Atom (2::nat)) \<cdot> (a \<^bsup>& b)"
-  apply simp 
-  done
-end
-
-
 subsection \<open>Regular Language Model of Antimirow Algebra\<close>
 
 notation
-  Atom ("\<langle>_\<rangle>") and
+  Sym ("\<langle>_\<rangle>") and
   Plus (infixl "+\<^sub>r" 65) and
   Times (infixl "\<cdot>\<^sub>r" 70) and
   Inter (infixl "&\<^sub>r" 70) and
@@ -638,5 +613,19 @@ theorem arden_regexp_r:
   using assms
   by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.rexp.simps(7) arden_r r_lang.abs_eq r_lang.rep_eq rexp_ewp_l_ewp)
 
+
+subsection \<open>Test\<close>
+
+
+lemma "lang (Sym f1) \<^bsup>& (lang (Sym f2) + lang (Sym f3)) = lang (Sym f1) \<^bsup>& lang (Sym f2) + lang (Sym f1) \<^bsup>& lang (Sym f3)"
+  apply simp 
+  done
+
+lemma "(x :: 'a reg_lan) \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
+  by auto
+
+lemma "(x :: 'a reg_lan) \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& y" 
+  nitpick
+  oops
 
 end
