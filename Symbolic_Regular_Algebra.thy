@@ -41,15 +41,16 @@ subsection \<open>Antimirow's Axioms\<close>
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
 class antimirow_base = star_dioid + ab_inter_semilattice_zero + 
-  fixes alp  :: "'a set" ("\<bbbP>")
+  fixes alp :: "('a \<Rightarrow> bool) set" ("\<bbbP>")
+  fixes val :: "('a \<Rightarrow> bool) \<Rightarrow> 'a set"
   assumes S11: "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
   assumes EWP : "1 \<^bsup>& x \<noteq> 0 \<longleftrightarrow> (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
-  assumes A15: "\<forall>x\<in>\<bbbP>. 1 \<^bsup>& x = 0"
-  assumes A16: "0 \<^bsup>& a = 0"
-  assumes A22: "\<forall>x \<in> \<bbbP>. \<forall>y \<in> \<bbbP>.(x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
-  assumes A23: "\<forall>x \<in> \<bbbP>. \<forall>y \<in> \<bbbP>.(a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
+  assumes A15: "0 \<^bsup>& a = 0"
+  assumes A16: "\<forall>p1 \<in> \<bbbP>. \<forall>x \<in> val p1. 1 \<^bsup>& x = 0"
+  assumes A17: "\<forall>p1 \<in> \<bbbP>. \<forall>p2 \<in> \<bbbP>. \<forall>x \<in> val p1. \<forall>y \<in> val p2. (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
+  assumes A18: "\<forall>p1 \<in> \<bbbP>. \<forall>p2 \<in> \<bbbP>. \<forall>x \<in> val p1. \<forall>y \<in> val p2. (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
 
 class Al_algebra = antimirow_base +
   assumes S12l: "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -91,14 +92,14 @@ proof
     using local.A13 local.inter_assoc' local.inter_comm local.opp_mult_def by auto
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     by (simp add: local.A14)
-  show "\<forall>x\<in>\<bbbP>. 1 \<^bsup>& x = 0"
-    by (simp add: local.A15)
   show "0 \<^bsup>& x = 0"
     by simp
-  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
-    by (simp add: local.A23 local.opp_mult_def)
-  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
-    by (simp add: local.A22 local.opp_mult_def)
+  show "\<forall>p1\<in>\<bbbP>. \<forall>x\<in>val p1. 1 \<^bsup>& x = 0"
+    by (simp add: local.A16)
+  show " \<forall>p1\<in>\<bbbP>. \<forall>p2\<in>\<bbbP>. \<forall>x\<in>val p1. \<forall>y\<in>val p2. x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
+    by (simp add: local.A18 times.opp_mult_def)
+  show "\<forall>p1\<in>\<bbbP>. \<forall>p2\<in>\<bbbP>. \<forall>x\<in>val p1. \<forall>y\<in>val p2. a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
+    by (simp add: local.A17 times.opp_mult_def)
   show "1 + x\<^sup>\<star> \<odot> x = x\<^sup>\<star>"
     by (simp add: local.S12l local.opp_mult_def)
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<odot> y + z \<Longrightarrow> x = z \<odot> y\<^sup>\<star>"
@@ -179,10 +180,7 @@ notation
   sup  (infixl "\<squnion>" 65)
 
 class symbolic_algebra = A_algebra + boolean_algebra +
-  assumes inf1 : "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
-  assumes sup1 : "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
-
-print_locale symbolic_algebra
-text \<open>Symbolic Regular Algebra's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
+  assumes inf1 : "\<lbrakk>p1 \<in> \<bbbP>; p2 \<in> \<bbbP>; x \<in> val p1; y \<in> val p2\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
+  assumes sup1 : "\<lbrakk>p1 \<in> \<bbbP>; p2 \<in> \<bbbP>; x \<in> val p1; y \<in> val p2\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
 
 end
