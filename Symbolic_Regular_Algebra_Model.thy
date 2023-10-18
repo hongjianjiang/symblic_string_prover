@@ -338,9 +338,10 @@ proof -
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
 
+definition val :: "('a \<Rightarrow> bool) \<Rightarrow> 'a set" where 
+"val f = {a. f a}"
 
-
-interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
+interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{%x. x = ({[1::nat]})}" "val"
 proof
   fix x y z:: "'a lan"
   show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -358,14 +359,25 @@ proof
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     apply(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def)
     by (metis (full_types) Collect_conv_if insert_subset kleene_algebra_class.dual.star_plus_one one_list_def one_set_def plus_ord_class.less_eq_def)
-  show "\<forall>x\<in>{}. 1 \<^bsup>& x = 0"
+  show "\<forall>p1\<in>{\<lambda>x. x = {[1]}}. \<forall>x\<in>val p1. 1 \<^bsup>& x = 0"
+    apply (simp add:val_def)
     by (simp add: Collect_empty_eq inter_set_def one_list_def one_set_def zero_set_def)
   show "0 \<^bsup>& x = 0"
     by simp
-  show "\<forall>a\<in>{}. \<forall>b\<in>{}. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
-    by(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def c_prod_def)
-  show "\<forall>a\<in>{}. \<forall>b\<in>{}. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
-    by(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def c_prod_def)
+next 
+  fix a b :: "nat lan"
+  show "\<forall>p1\<in>{\<lambda>x. x = {[1]}}.
+              \<forall>p2\<in>{\<lambda>x. x = {[1]}}.
+                 \<forall>x\<in>val p1.
+                    \<forall>y\<in>val p2. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+    apply (simp add:val_def) apply(simp add:inter_set_def c_prod_def)
+    by (metis (no_types, lifting) same_append_eq times_list_def)
+  show "\<forall>p1\<in>{\<lambda>x. x = {[1]}}.
+              \<forall>p2\<in>{\<lambda>x. x = {[1]}}.
+                 \<forall>x\<in>val p1.
+                    \<forall>y\<in>val p2. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y) "
+    apply (simp add:val_def) apply(simp add:inter_set_def c_prod_def)
+    by (metis (no_types, lifting) append_same_eq times_list_def)
 qed
 
 interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
