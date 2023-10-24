@@ -31,14 +31,16 @@ end (* instantiation *)
 
 subsection \<open>Regular Languages\<close>
 
-datatype 'a rexp =
+datatype (atoms: 'a) rexp =
   Zero
 | One
-| Sym "'a \<Rightarrow> bool"
+| Sym "'a"
 | Plus "'a rexp" "'a rexp"
 | Times "'a rexp" "'a rexp"
 | Star "'a rexp"
 | Inter "'a rexp" "'a rexp"
+
+
 
 text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
@@ -47,7 +49,7 @@ adapted from there.\<close>
 fun lang :: "'a rexp \<Rightarrow> 'a lan" where
   "lang Zero = 0"  \<comment> \<open>{}\<close>
 | "lang One = 1"  \<comment> \<open>{[]}\<close>
-| "lang (Sym f) = {[a]|a. f a}"
+| "lang (Sym a) = {[a]}"
 | "lang (Plus x y) = lang x + lang y"
 | "lang (Times x y) = lang x \<cdot> lang y"
 | "lang (Star x) = (lang x)\<^sup>\<star>" 
@@ -338,10 +340,7 @@ proof -
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
 
-definition val :: "('a \<Rightarrow> bool) \<Rightarrow> 'a set" where 
-"val f = {a. f a}"
-
-interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{%x. x = ({[1::nat]})}" "val"
+interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "({})"
 proof
   fix x y z:: "'a lan"
   show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -359,26 +358,18 @@ proof
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     apply(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def)
     by (metis (full_types) Collect_conv_if insert_subset kleene_algebra_class.dual.star_plus_one one_list_def one_set_def plus_ord_class.less_eq_def)
-  show "\<forall>p1\<in>{\<lambda>x. x = {[1]}}. \<forall>x\<in>val p1. 1 \<^bsup>& x = 0"
-    apply (simp add:val_def)
-    by (simp add: Collect_empty_eq inter_set_def one_list_def one_set_def zero_set_def)
+  show "\<forall>x\<in>{}. 1 \<^bsup>& x = 0"
+    by (simp add:one_set_def inter_set_def one_list_def zero_set_def)
   show "0 \<^bsup>& x = 0"
     by simp
 next 
-  fix a b :: "nat lan"
-  show "\<forall>p1\<in>{\<lambda>x. x = {[1]}}.
-              \<forall>p2\<in>{\<lambda>x. x = {[1]}}.
-                 \<forall>x\<in>val p1.
-                    \<forall>y\<in>val p2. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
-    apply (simp add:val_def) apply(simp add:inter_set_def c_prod_def)
-    by (metis (no_types, lifting) same_append_eq times_list_def)
-  show "\<forall>p1\<in>{\<lambda>x. x = {[1]}}.
-              \<forall>p2\<in>{\<lambda>x. x = {[1]}}.
-                 \<forall>x\<in>val p1.
-                    \<forall>y\<in>val p2. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y) "
-    apply (simp add:val_def) apply(simp add:inter_set_def c_prod_def)
-    by (metis (no_types, lifting) append_same_eq times_list_def)
+  fix a b :: "'a lan"
+  show "\<forall>x\<in>{}. \<forall>y\<in>{}. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+    by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def  times_list_def)
+  show "\<forall>x\<in>{}. \<forall>y\<in>{}. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+    by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def)
 qed
+
 
 interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
 proof
@@ -388,6 +379,7 @@ proof
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
     using arden_r inter_empty by blast
 qed
+
 
 subsection \<open>Regular Language Model of Antimirow Algebra\<close>
 
@@ -536,7 +528,7 @@ qed
 instantiation reg_lan :: (type) Ar_algebra
 begin
 
-definition alp_reg_lan :: "'a reg_lan set" where 
+definition alp_reg_lan :: "('a reg_lan) set" where 
 "alp_reg_lan = {}"
 
 instance proof
@@ -574,14 +566,14 @@ next
     ultimately show ?thesis
       apply (transfer, auto)
       using zero_set_def apply auto[1]
-        apply (simp add: zero_set_def)
+      apply (simp add: zero_set_def)
       subgoal 
-        by (metis (mono_tags, lifting) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.simps(7) empty_iff join.sup_left_idem l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp zero_set_def)
-        subgoal 
-          using zero_set_def by auto
-        subgoal 
-          by (metis lan_antimirow_l.dual.EWP)
-        done
+      by (metis (mono_tags, lifting) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.simps(7) empty_iff join.sup_left_idem l_ewp_def lan_antimirow_l.dual.EWP one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp_l_ewp zero_set_def)
+      subgoal 
+      using zero_set_def by auto
+      subgoal 
+      by (metis lan_antimirow_l.dual.EWP)
+      done
   qed
 next 
   show "\<forall>x\<in>\<bbbP>. (1::'a reg_lan) \<^bsup>& x = 0"
@@ -590,8 +582,6 @@ next
   fix a b :: "'a reg_lan"
   show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
     by (simp add: alp_reg_lan_def)
-next 
-  fix a b :: "'a reg_lan"
   show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
     using alp_reg_lan_def by blast
 qed

@@ -41,16 +41,15 @@ subsection \<open>Antimirow's Axioms\<close>
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
 class antimirow_base = star_dioid + ab_inter_semilattice_zero + 
-  fixes alp :: "('a \<Rightarrow> bool) set" ("\<bbbP>")
-  fixes val :: "('a \<Rightarrow> bool) \<Rightarrow> 'a set"
-  assumes S11: "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
-  assumes EWP : "1 \<^bsup>& x \<noteq> 0 \<longleftrightarrow> (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
+  fixes alp :: "('a) set" ("\<bbbP>")
+  assumes S11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
+  assumes EWP : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "0 \<^bsup>& a = 0"
-  assumes A16: "\<forall>p1 \<in> \<bbbP>. \<forall>x \<in> val p1. 1 \<^bsup>& x = 0"
-  assumes A17: "\<forall>p1 \<in> \<bbbP>. \<forall>p2 \<in> \<bbbP>. \<forall>x \<in> val p1. \<forall>y \<in> val p2. (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
-  assumes A18: "\<forall>p1 \<in> \<bbbP>. \<forall>p2 \<in> \<bbbP>. \<forall>x \<in> val p1. \<forall>y \<in> val p2. (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
+  assumes A16: "\<forall>x \<in> \<bbbP>. 1 \<^bsup>& x = 0"
+  assumes A17: "\<forall>x \<in> \<bbbP>. \<forall>y \<in> \<bbbP>. (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
+  assumes A18: "\<forall>x \<in> \<bbbP>. \<forall>y \<in> \<bbbP>. (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
 
 class Al_algebra = antimirow_base +
   assumes S12l: "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -94,11 +93,11 @@ proof
     by (simp add: local.A14)
   show "0 \<^bsup>& x = 0"
     by simp
-  show "\<forall>p1\<in>\<bbbP>. \<forall>x\<in>val p1. 1 \<^bsup>& x = 0"
+  show "\<forall>x\<in>\<bbbP>. 1 \<^bsup>& x = 0"
     by (simp add: local.A16)
-  show " \<forall>p1\<in>\<bbbP>. \<forall>p2\<in>\<bbbP>. \<forall>x\<in>val p1. \<forall>y\<in>val p2. x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
+  show " \<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
     by (simp add: local.A18 times.opp_mult_def)
-  show "\<forall>p1\<in>\<bbbP>. \<forall>p2\<in>\<bbbP>. \<forall>x\<in>val p1. \<forall>y\<in>val p2. a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
+  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
     by (simp add: local.A17 times.opp_mult_def)
   show "1 + x\<^sup>\<star> \<odot> x = x\<^sup>\<star>"
     by (simp add: local.S12l local.opp_mult_def)
