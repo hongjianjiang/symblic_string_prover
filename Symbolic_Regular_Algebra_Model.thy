@@ -356,7 +356,7 @@ proof -
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
 
-interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "({})"
+interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "({{[1]}})"
 proof
   fix x y z:: "'a lan"
   show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -374,20 +374,20 @@ proof
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     apply(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def)
     by (metis (full_types) Collect_conv_if insert_subset kleene_algebra_class.dual.star_plus_one one_list_def one_set_def plus_ord_class.less_eq_def)
-  show "\<forall>x\<in>{}. 1 \<^bsup>& x = 0"
+  show "\<forall>x\<in>{{[1]}}. 1 \<^bsup>& x = 0"
     by (simp add:one_set_def inter_set_def one_list_def zero_set_def)
   show "0 \<^bsup>& x = 0"
     by simp
 next 
-  fix a b :: "'a lan"
-  show "\<forall>x\<in>{}. \<forall>y\<in>{}. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+  fix a b :: "nat lan"
+  show "\<forall>x\<in>{{[1]}}. \<forall>y\<in>{{[1]}}. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
     by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def  times_list_def)
-  show "\<forall>x\<in>{}. \<forall>y\<in>{}. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
-    by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def)
+  show "\<forall>x\<in>{{[1]}}. \<forall>y\<in>{{[1]}}. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+    by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def times_list_def)
 qed
 
 
-interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{}"
+interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{{[1]}}"
 proof
   fix x y z :: "'a lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
@@ -565,16 +565,18 @@ definition alp_reg_lan :: "reg_lan set" where
 instance proof
   fix x :: "reg_lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
+    thm kleene_algebra_class.dual.star2
     by (metis kleene_algebra_class.dual.star2)
 next
   fix x :: "reg_lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
-    by (metis kleene_algebra_class.star_unfoldr_eq)
+    thm kleene_algebra_class.star_unfoldr_eq
+    by (rule kleene_algebra_class.star_unfoldr_eq)
 next
   fix x y z :: "reg_lan"
-  show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y" 
-    by (metis one_reg_lan.rep_eq reg_lan.Rep_reg_lan_inject times_reg_lan.rep_eq inter_reg_lan.rep_eq lan_antimirow_l.A13)
-next 
+  show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
+  
+next
   fix x :: "reg_lan"
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     by (metis one_reg_lan.rep_eq reg_lan.Rep_reg_lan_inject star_reg_lan.rep_eq inter_reg_lan.rep_eq lan_antimirow_l.dual.A14)

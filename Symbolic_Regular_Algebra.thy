@@ -18,12 +18,15 @@ class inter_semilattice_zero = inter_semilattice + zero +
   assumes inter_zerol [simp]: "0 \<^bsup>& x = 0"
   assumes inter_zeror [simp]: "x \<^bsup>& 0 = 0"
 
-class ab_inter_semilattice_zero = inter_semilattice_zero + ab_semigroup_add + 
+class inter_semilattice_one = inter_semilattice + monoid_mult +  
+  assumes ex_one_inter [simp]: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
+
+class ab_inter_semilattice_zero_one = inter_semilattice_zero + ab_semigroup_add + inter_semilattice_one + 
   assumes ex_distrib_right [simp]: "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
   assumes ex_distrib_left [simp]: "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
 
 
-class ex_kleene_algebra = kleene_algebra + ab_inter_semilattice_zero 
+class ex_kleene_algebra = kleene_algebra + ab_inter_semilattice_zero_one
 
 lemma (in ex_kleene_algebra) dual_ex_kleene_algebra: "class.ex_kleene_algebra ((+) ) ((\<odot>) ) 1 0 (\<le>) (<) star inter"
 proof 
@@ -165,6 +168,16 @@ sublocale Al_algebra \<subseteq> K2l_algebra
   by unfold_locales (metis S12l order_refl, metis add_comm kozen_induct_l) 
 
 sublocale Al_algebra \<subseteq> K1l_algebra ..
+
+sublocale A_algebra \<subseteq> ex_kleene_algebra 
+  apply unfold_locales 
+  subgoal for x 
+    by simp
+  subgoal for x y z 
+    by (simp add: local.star_inductl_var)
+  subgoal for x y z 
+    by (simp add: local.star_inductr_var)
+  done
 
 sublocale A_algebra \<subseteq> K1_algebra ..
 
