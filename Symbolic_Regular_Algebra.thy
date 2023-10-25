@@ -18,8 +18,8 @@ class inter_semilattice_zero = inter_semilattice + zero +
   assumes inter_zerol [simp]: "0 \<^bsup>& x = 0"
   assumes inter_zeror [simp]: "x \<^bsup>& 0 = 0"
 
-class inter_semilattice_one = inter_semilattice + monoid_mult +  
-  assumes ex_one_inter [simp]: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
+class inter_semilattice_one = inter_semilattice + monoid_mult 
+
 
 class ab_inter_semilattice_zero_one = inter_semilattice_zero + ab_semigroup_add + inter_semilattice_one + 
   assumes ex_distrib_right [simp]: "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
@@ -37,17 +37,21 @@ proof
     by (simp add: local.dual.star_inductl_var)
   show "z + y \<odot> x \<le> y \<Longrightarrow> z \<odot> x\<^sup>\<star> \<le> y"
     by (simp add: local.opp_mult_def local.star_inductl_var)
+  show "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
+    by simp
+  show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
+    by simp
 qed
 
 subsection \<open>Antimirow's Axioms\<close>
 
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
-class antimirow_base = star_dioid + ab_inter_semilattice_zero + 
+class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
   fixes alp :: "('a) set" ("\<bbbP>")
   assumes S11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
   assumes EWP : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
-  assumes A13: "1 \<^bsup>& (a \<cdot> b) = 1 \<^bsup>& a \<^bsup>& b"                
+  assumes A13: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "0 \<^bsup>& a = 0"
   assumes A16: "\<forall>x \<in> \<bbbP>. 1 \<^bsup>& x = 0"
@@ -91,7 +95,7 @@ proof
   show "(1 \<^bsup>& x \<noteq> 0) = (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
     by (simp add: local.EWP)
   show "1 \<^bsup>& (x \<odot> y) = 1 \<^bsup>& x \<^bsup>& y"
-    using local.A13 local.inter_assoc' local.inter_comm local.opp_mult_def by auto
+    using local.A13 local.inter_assoc' local.inter_comm local.opp_mult_def by force
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     by (simp add: local.A14)
   show "0 \<^bsup>& x = 0"
@@ -106,6 +110,10 @@ proof
     by (simp add: local.S12l local.opp_mult_def)
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<odot> y + z \<Longrightarrow> x = z \<odot> y\<^sup>\<star>"
     by (simp add: local.Al local.opp_mult_def)
+  show "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
+    by simp
+  show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
+    by simp
 qed
 
 context Al_algebra
