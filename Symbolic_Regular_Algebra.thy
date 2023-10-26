@@ -68,6 +68,22 @@ class Ar_algebra = antimirow_base +
 
 class A_algebra = Al_algebra + Ar_algebra
 
+context antimirow_base begin 
+
+lemma inter_prod1: "1 \<^bsup>& x = 1 \<Longrightarrow> 1 \<^bsup>& y = 1 \<Longrightarrow> 1 \<^bsup>& (x \<cdot> y) = 1"
+  by (simp add: local.A13)
+
+lemma inter_prod2: "1 \<^bsup>& x = 0 \<Longrightarrow> 1 \<^bsup>& y = 0 \<Longrightarrow> 1 \<^bsup>& (x \<cdot> y) = 0"
+  by (simp add: local.A13)
+
+lemma inter_prod3: "1 \<^bsup>& x = 0 \<Longrightarrow> 1 \<^bsup>& y = 1 \<Longrightarrow> 1 \<^bsup>& (x \<cdot> y) = 0"
+  by (simp add: local.A13)
+
+lemma inter_prod4: "1 \<^bsup>& x = 1 \<Longrightarrow> 1 \<^bsup>& y = 0 \<Longrightarrow> 1 \<^bsup>& (x \<cdot> y) = 0"
+  by (simp add: local.A13)
+end
+
+
 sublocale Al_algebra \<subseteq> dual: Ar_algebra
     "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star" "inter" "alp"
 proof 
