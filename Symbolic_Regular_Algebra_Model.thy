@@ -106,6 +106,9 @@ begin
     is inter
     using lang.simps(8) by blast
 
+  lemma l1: "(x :: reg_lan) \<cdot> 0 = 0" 
+    using Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.zero_reg_lan.rep_eq by force
+
   instance
   proof
     fix x y z :: "reg_lan"
@@ -170,9 +173,8 @@ abbreviation w_length :: "'a list \<Rightarrow> nat" ( "|_|")
 definition l_ewp :: "'a lan \<Rightarrow> bool" where
   "l_ewp X \<longleftrightarrow> {[]} \<subseteq> X"
 
-
 lemma inter_empty:"l_ewp X \<Longrightarrow> 1 \<^bsup>& X \<noteq> 0"
-  by (metis add.right_neutral disjoint_insert(2) ex_distrib_left inf.idem insertCI inter_idem l_ewp_def one_list_def one_set_def plus_ord_class.less_eq_def zero_set_def)
+  by (simp add:l_ewp_def inter_set_def one_list_def one_set_def zero_set_def) 
 
 interpretation lan_kozen: K2_algebra "(+)" "(\<cdot>)" "1 :: 'a lan" 0 "(\<subseteq>)" "(\<subset>)" "star" ..
 
@@ -201,7 +203,7 @@ next
   qed
 qed
 
-lemma l_prod_elim: "w\<in>X \<cdot> Y \<longleftrightarrow> (\<exists>u v. w = u@v \<and> u\<in>X \<and> v\<in>Y)"
+lemma l_prod_elim: "w \<in> X \<cdot> Y \<longleftrightarrow> (\<exists>u v. w = u@v \<and> u\<in>X \<and> v\<in>Y)"
   by (simp add: c_prod_def times_list_def)
 
 lemma power_minor_var: 
@@ -212,7 +214,7 @@ lemma power_minor_var:
   using length_lang_pow_lb trans_le_add2
   by (simp add: length_lang_pow_lb trans_le_add2 mult.commute)
  
-lemma power_lb: "(\<forall>w\<in>X. k\<le>|w| ) \<longrightarrow> (\<forall>w. w\<in>X\<^bsup>Suc n\<^esup> \<longrightarrow> n*k\<le>|w| )"
+lemma power_lb: "(\<forall>w \<in> X. k \<le> |w| ) \<longrightarrow> (\<forall>w. w \<in> X\<^bsup>Suc n\<^esup> \<longrightarrow> n*k\<le>|w| )"
   by (metis power_minor_var)
 
 lemma prod_lb: 
@@ -356,7 +358,7 @@ qed
 
 interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "({{[3]}})"
 proof
-  fix x y z:: "'a lan"
+  fix x y z:: "nat lan"
   show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
     by simp
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = y \<cdot> x + z \<Longrightarrow> x = y\<^sup>\<star> \<cdot> z"
@@ -367,23 +369,21 @@ proof
     apply(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def)
     by (meson Set.set_insert insertCI)
   show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
-    apply(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def)
-    by (metis Collect_cong append_is_Nil_conv l_prod_elim)
+    by (auto simp: one_set_def one_list_def inter_set_def zero_set_def plus_set_def l_prod_elim )
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     apply(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def)
-    by (metis (full_types) Collect_conv_if insert_subset kleene_algebra_class.dual.star_plus_one one_list_def one_set_def plus_ord_class.less_eq_def)
-  show "\<forall>x\<in>{{[3]}}. 1 \<^bsup>& x = 0"
+    by (metis Collect_conv_if insert_subset left_near_kleene_algebra_class.star_ref one_list_def one_set_def)
+  show "x \<in> {{[3]}} \<Longrightarrow> 1 \<^bsup>& x = 0"
     by (simp add:one_set_def inter_set_def one_list_def zero_set_def)
   show "0 \<^bsup>& x = 0"
     by simp
 next 
-  fix a b :: "nat lan"
-  show "\<forall>x\<in>{{[3]}}. \<forall>y\<in>{{[3]}}. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
-    by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def  times_list_def)
-  show "\<forall>x\<in>{{[3]}}. \<forall>y\<in>{{[3]}}. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+  fix a b x y:: "nat lan"
+  show "x \<in> {{[3]}} \<Longrightarrow> y \<in> {{[3]}} \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+    by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def times_list_def)
+  show "x \<in> {{[3]}} \<Longrightarrow> y \<in> {{[3]}} \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
     by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def times_list_def)
 qed
-
 
 interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{{[3]}}"
 proof
@@ -553,12 +553,17 @@ next
     apply  (simp add:P_def r_lang_def)
     using rexp_ewp.simps(8) by fastforce
 qed
-    
+
 instantiation reg_lan ::  Ar_algebra
 begin
 
 definition alp_reg_lan :: "reg_lan set" where 
   "alp_reg_lan = {Abs_reg_lan {[(Abs_alp (3))]}}"
+
+lemma "(x :: reg_lan) \<cdot> 1  = x"
+  apply auto
+  done
+
 
 instance proof
   fix x :: "reg_lan"
@@ -604,16 +609,26 @@ next
       done
   qed
 next 
-  show "\<forall>x\<in>\<bbbP>. (1::reg_lan) \<^bsup>& x = 0"
+  fix x :: "reg_lan"
+  show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
     apply (simp add: alp_reg_lan_def one_reg_lan_def inter_reg_lan_def) 
     by (smt (verit, del_insts) lang.simps(1) one_reg_lan.rep_eq reg_lan.Abs_reg_lan_inverse Rep_reg_lan_inverse zero_reg_lan.rep_eq empty_Collect_eq inter_set_def not_Cons_self2 one_list_def one_set_def rangeI singletonD val_cons.simps zero_set_def)
 next 
-  fix a b :: "reg_lan"
-  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
-    apply (simp add: alp_reg_lan_def times_reg_lan_def inter_reg_lan_def inter_set_def)
-    sorry
-  show "\<forall>x\<in>\<bbbP>. \<forall>y\<in>\<bbbP>. a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
-    sorry
+  fix a b x y:: "reg_lan"
+  have "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
+    apply (simp add: alp_reg_lan_def inter_reg_lan_def one_reg_lan_def zero_reg_lan_def inter_set_def one_set_def one_list_def zero_set_def)
+    by (metis (no_types, lifting) Symbolic_Regular_Algebra_Model.lang.simps(1) Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inverse empty_Collect_eq l_ewp_def one_list_def one_set_def r_lang.rep_eq rexp_ewp.simps(7) rexp_ewp_l_ewp singletonD subsetI val_cons.simps)
+  then have "x \<in> \<bbbP> \<Longrightarrow> x \<^bsup>& (a \<cdot> b) = (x \<^bsup>& a) \<cdot> (x \<^bsup>& b)"
+    apply(cases "a = x")
+    subgoal 
+      apply simp apply(cases "b = 1") apply simp proof -  
+      assume a1:"x \<in> \<bbbP>" and a2:"1 \<^bsup>& x = 0" and a3:"a = x" and a4:"b = 1"
+      from a2 have c3:"x \<^bsup>& 1 = 0"
+        by (simp add: inter_comm)
+      from a1 have "0 = x \<cdot> 0"
+        apply auto done
+        
+
 next 
   fix x y :: "reg_lan"
   show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
@@ -633,10 +648,12 @@ next
       from a1 have c1:"1 \<^bsup>& x = 1"
         by (smt (verit, del_insts) Collect_cong one_reg_lan.rep_eq reg_lan.Rep_reg_lan_inverse zero_reg_lan.abs_eq empty_Collect_eq inter_reg_lan.rep_eq inter_set_def one_set_def singletonD singleton_conv2 zero_set_def)
       from c1 a2 have c2:"1 \<^bsup>& (x \<cdot> y) = 1"
-        by (smt (verit) Collect_cong reg_lan.Rep_reg_lan_inject times_reg_lan.rep_eq inter_reg_lan.rep_eq inter_set_def l_prod_elim mem_Collect_eq mult.right_neutral)
+        apply (simp add: one_reg_lan_def inter_reg_lan_def times_reg_lan_def)
+        by (smt (verit) Collect_cong one_reg_lan.rep_eq reg_lan.Abs_reg_lan_inverse reg_lan.Rep_reg_lan times_reg_lan.rep_eq append_is_Nil_conv inter_set_def l_prod_elim one_list_def one_set_def singletonD)
       from c1 a2 have c3:"1 \<^bsup>& x \<^bsup>& y = 1"
-        apply auto done
-      from c2 c3 show ?thesis apply auto done
+        by auto 
+      from c2 c3 show ?thesis 
+        by auto 
     qed
   next 
     assume a1: "1 \<^bsup>& x \<noteq> 0"
@@ -646,7 +663,7 @@ next
       from a1 have c1:"1 \<^bsup>& x = 1"
         by (smt (verit, del_insts) Collect_cong one_reg_lan.rep_eq reg_lan.Rep_reg_lan_inverse zero_reg_lan.abs_eq empty_Collect_eq inter_reg_lan.rep_eq inter_set_def one_set_def singletonD singleton_conv2 zero_set_def)
       then show ?thesis using a2
-        by (smt (z3) Collect_cong Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq append_is_Nil_conv inter_reg_lan.rep_eq inter_set_def l_prod_elim mem_Collect_eq one_list_def one_set_def singleton_conv2)
+        by (smt (z3) Collect_cong one_reg_lan.rep_eq reg_lan.Rep_reg_lan_inject times_reg_lan.rep_eq append_is_Nil_conv inter_reg_lan.rep_eq inter_set_def l_prod_elim mem_Collect_eq one_list_def one_set_def singleton_conv2)
     qed
   qed
 qed
