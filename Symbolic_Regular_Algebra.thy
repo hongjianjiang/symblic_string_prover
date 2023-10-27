@@ -55,8 +55,7 @@ class antimirow_base = star_dioid + ab_inter_semilattice_zero_one +
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "0 \<^bsup>& a = 0"
   assumes A16: "\<lbrakk>x \<in> \<bbbP>\<rbrakk> \<Longrightarrow> 1 \<^bsup>& x = 0"
-  assumes A17: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b) = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
-  assumes A18: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
+
 
 class Al_algebra = antimirow_base +
   assumes S12l: "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -82,8 +81,6 @@ lemma inter_prod3: "1 \<^bsup>& x = 0 \<Longrightarrow> 1 \<^bsup>& y = 1 \<Long
 lemma inter_prod4: "1 \<^bsup>& x = 1 \<Longrightarrow> 1 \<^bsup>& y = 0 \<Longrightarrow> 1 \<^bsup>& (x \<cdot> y) = 0"
   by (simp add: local.A13)
 
-lemma A18e1: "\<forall>x \<in> \<bbbP>. (a \<cdot> x) \<^bsup>& (b \<cdot> x) = (a \<^bsup>& b) \<cdot> (x \<^bsup>& x)"
-  by (simp add: local.A18)
 end
 
 
@@ -119,6 +116,8 @@ proof
     by (simp add: local.A14)
   show "0 \<^bsup>& x = 0"
     by simp
+  show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
+    by (simp add: local.A16)
   show "1 + x\<^sup>\<star> \<odot> x = x\<^sup>\<star>"
     by (simp add: local.S12l local.opp_mult_def)
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<odot> y + z \<Longrightarrow> x = z \<odot> y\<^sup>\<star>"
@@ -127,13 +126,7 @@ proof
     by simp
   show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
     by simp
-  show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
-    by (simp add: local.A16)
-  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
-    by (simp add: local.A18 times.opp_mult_def)
-  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
-    by (simp add: local.A17 times.opp_mult_def)
-qed 
+qed
 
 context Al_algebra
 begin

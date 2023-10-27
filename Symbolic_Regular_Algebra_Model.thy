@@ -31,7 +31,7 @@ end (* instantiation *)
 
 subsection \<open>Regular Languages\<close>
 
-typedef alp = "{1::nat}"
+typedef alp = "{1::nat,2,3,4,5}"
   by auto
 
 datatype cts  =  Atom alp
@@ -106,8 +106,11 @@ begin
     is inter
     using lang.simps(8) by blast
 
-  lemma l1: "(x :: reg_lan) \<cdot> 0 = 0" 
-    using Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inject Symbolic_Regular_Algebra_Model.times_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.zero_reg_lan.rep_eq by force
+lemma "(x::reg_lan) \<^bsup>&  1 = 0 \<Longrightarrow> 1 \<^bsup>&  x = 0" 
+  using inter_reg_lan.rep_eq inter_reg_lan_def reg_lan.Rep_reg_lan_inverse inter_comm
+  by (smt (verit, best))
+  
+
 
   instance
   proof
@@ -356,7 +359,7 @@ proof -
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
 
-interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "({{[3]}})"
+interpretation lan_antimirow_l: Al_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "({{[1]},{[2]},{[3]},{[4]},{[5]}})"
 proof
   fix x y z:: "nat lan"
   show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -373,19 +376,14 @@ proof
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
     apply(simp add: one_set_def one_list_def inter_set_def zero_set_def plus_set_def)
     by (metis Collect_conv_if insert_subset left_near_kleene_algebra_class.star_ref one_list_def one_set_def)
-  show "x \<in> {{[3]}} \<Longrightarrow> 1 \<^bsup>& x = 0"
-    by (simp add:one_set_def inter_set_def one_list_def zero_set_def)
+  show "x \<in> {{[1]}, {[2]}, {[3]}, {[4]}, {[5]}} \<Longrightarrow> 1 \<^bsup>& x = 0"
+    apply (simp add:one_set_def inter_set_def one_list_def zero_set_def)
+    by blast
   show "0 \<^bsup>& x = 0"
     by simp
-next 
-  fix a b x y:: "nat lan"
-  show "x \<in> {{[3]}} \<Longrightarrow> y \<in> {{[3]}} \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
-    by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def times_list_def)
-  show "x \<in> {{[3]}} \<Longrightarrow> y \<in> {{[3]}} \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
-    by (auto simp:one_set_def inter_set_def one_list_def zero_set_def c_prod_def times_list_def)
 qed
 
-interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "{{[3]}}"
+interpretation lan_antimirow_r: Ar_algebra "(+)" "(\<cdot>)" "1 :: nat lan" "0"  "(\<subseteq>)" "(\<subset>)" "star" "(\<^bsup>&)" "({{[1]},{[2]},{[3]},{[4]},{[5]}})"
 proof
   fix x y z :: "'a lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
@@ -558,17 +556,15 @@ instantiation reg_lan ::  Ar_algebra
 begin
 
 definition alp_reg_lan :: "reg_lan set" where 
-  "alp_reg_lan = {Abs_reg_lan {[(Abs_alp (3))]}}"
-
-lemma "(x :: reg_lan) \<cdot> 1  = x"
-  apply auto
-  done
-
+  "alp_reg_lan = {Abs_reg_lan {[(Abs_alp (1))]},
+Abs_reg_lan {[(Abs_alp (2))]},
+Abs_reg_lan {[(Abs_alp (3))]},
+Abs_reg_lan {[(Abs_alp (4))]},
+Abs_reg_lan {[(Abs_alp (5))]}}"
 
 instance proof
   fix x :: "reg_lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
-    thm kleene_algebra_class.dual.star2
     by (metis kleene_algebra_class.dual.star2)
 next
   fix x :: "reg_lan"
@@ -613,22 +609,6 @@ next
   show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
     apply (simp add: alp_reg_lan_def one_reg_lan_def inter_reg_lan_def) 
     by (smt (verit, del_insts) lang.simps(1) one_reg_lan.rep_eq reg_lan.Abs_reg_lan_inverse Rep_reg_lan_inverse zero_reg_lan.rep_eq empty_Collect_eq inter_set_def not_Cons_self2 one_list_def one_set_def rangeI singletonD val_cons.simps zero_set_def)
-next 
-  fix a b x y:: "reg_lan"
-  have "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
-    apply (simp add: alp_reg_lan_def inter_reg_lan_def one_reg_lan_def zero_reg_lan_def inter_set_def one_set_def one_list_def zero_set_def)
-    by (metis (no_types, lifting) Symbolic_Regular_Algebra_Model.lang.simps(1) Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.reg_lan.Rep_reg_lan_inverse empty_Collect_eq l_ewp_def one_list_def one_set_def r_lang.rep_eq rexp_ewp.simps(7) rexp_ewp_l_ewp singletonD subsetI val_cons.simps)
-  then have "x \<in> \<bbbP> \<Longrightarrow> x \<^bsup>& (a \<cdot> b) = (x \<^bsup>& a) \<cdot> (x \<^bsup>& b)"
-    apply(cases "a = x")
-    subgoal 
-      apply simp apply(cases "b = 1") apply simp proof -  
-      assume a1:"x \<in> \<bbbP>" and a2:"1 \<^bsup>& x = 0" and a3:"a = x" and a4:"b = 1"
-      from a2 have c3:"x \<^bsup>& 1 = 0"
-        by (simp add: inter_comm)
-      from a1 have "0 = x \<cdot> 0"
-        apply auto done
-        
-
 next 
   fix x y :: "reg_lan"
   show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
