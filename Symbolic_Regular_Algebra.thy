@@ -55,6 +55,8 @@ class antimirow_base = star_dioid + ab_inter_semilattice_zero_one +
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "0 \<^bsup>& a = 0"
   assumes A16: "\<lbrakk>x \<in> \<bbbP>\<rbrakk> \<Longrightarrow> 1 \<^bsup>& x = 0"
+  assumes A17: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b)  = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
+  assumes A18: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y)  = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
 
 
 class Al_algebra = antimirow_base +
@@ -126,6 +128,10 @@ proof
     by simp
   show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
     by simp
+  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
+    by (simp add: local.A18 local.opp_mult_def)
+  show "x \<in> \<bbbP> \<Longrightarrow> a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
+    by (metis \<open>x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0\<close> local.A15 local.A18 local.annil local.inter_idem local.mult_1_left local.mult_1_right local.opp_mult_def)
 qed
 
 context Al_algebra
