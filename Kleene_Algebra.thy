@@ -967,4 +967,59 @@ qed
 
 end (* commutative_kleene_algebra *)
 
+
+
+class inter_semilattice = inter +
+  assumes inter_assoc' [ac_simps]: "(x \<^bsup>& y) \<^bsup>& z = x \<^bsup>& (y \<^bsup>& z)"
+  and inter_comm [ac_simps] : "x \<^bsup>& y = y \<^bsup>& x"
+  and inter_idem [simp]: "x \<^bsup>& x = x"
+
+class inter_semilattice_zero = inter_semilattice + zero +  
+  assumes inter_zerol [simp]: "0 \<^bsup>& x = 0"
+  assumes inter_zeror [simp]: "x \<^bsup>& 0 = 0"
+
+class inter_semilattice_one = inter_semilattice + monoid_mult 
+
+
+class ab_inter_semilattice_zero_one = inter_semilattice_one + ab_semigroup_add +  inter_semilattice_zero +
+  assumes ex_distrib_right [simp]: "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
+  assumes ex_distrib_left [simp]: "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
+
+
+class ex_kleene_algebra = ab_inter_semilattice_zero_one + kleene_algebra 
+lemma (in ex_kleene_algebra) dual_ex_kleene_algebra: "class.ex_kleene_algebra ((+) ) 1 ((\<odot>) ) inter 0 (\<le>) (<) star"
+proof 
+  fix x y z
+  show "1 + x \<odot> x\<^sup>\<star> \<le> x\<^sup>\<star>" 
+    by (simp add: local.opp_mult_def)
+  show "z + x \<odot> y \<le> y \<Longrightarrow> x\<^sup>\<star> \<odot> z \<le> y"
+    by (simp add: local.opp_mult_def local.star_inductr')
+  show "z + y \<odot> x \<le> y \<Longrightarrow> z \<odot> x\<^sup>\<star> \<le> y"
+    by (simp add: local.opp_mult_def local.star_inductl)
+  show "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
+    by simp
+  show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
+    by simp
+  show " x \<odot> y \<odot> z = x \<odot> (y \<odot> z)"
+    by (simp add: mult_assoc times.opp_mult_def)
+  show "1 \<odot> x = x"
+    by (simp add: local.opp_mult_def)
+  show "x \<odot> 1 = x"
+    by (simp add: local.opp_mult_def)
+  show "(x + y) \<odot> z = x \<odot> z + y \<odot> z"
+    by (simp add: local.distrib_left local.opp_mult_def)
+  show "0 + x = x"
+    by simp
+  show "0 \<odot> x = 0"
+    by (simp add: local.opp_mult_def)
+  show "x \<odot> 0 = 0"
+    by (simp add: local.opp_mult_def)
+  show "x + x = x"
+    by simp
+  show "x \<odot> (y + z) = x \<odot> y + x \<odot> z"
+    by (simp add: local.opp_mult_def)
+  show "z \<odot> x \<le> z \<odot> (x + y)"
+    by (simp add: local.opp_mult_def)
+qed
+
 end

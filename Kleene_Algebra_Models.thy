@@ -439,4 +439,30 @@ begin
 
 end (* instantiation *)
 
+instantiation set :: (monoid_mult) ex_kleene_algebra
+begin
+
+  definition inter_set_def: \<comment> \<open>the complex product\<close>
+    "A \<^bsup>& B = {u |u. u \<in> A \<and> u \<in> B}"
+
+  instance
+  proof
+    fix x y z :: "'a set"
+    show "x \<^bsup>& y \<^bsup>& z = x \<^bsup>& (y \<^bsup>& z)"
+      by (simp add: inf_assoc inter_set_def)
+    show "x \<^bsup>& y = y \<^bsup>& x"
+      using inter_set_def by auto
+    show "x \<^bsup>& x = x"
+      by (simp add: inter_set_def)
+    show "0 \<^bsup>& x = 0"
+      by (simp add: inter_set_def zero_set_def)
+    show "x \<^bsup>& 0 = 0"
+      by (simp add: inter_set_def zero_set_def)
+    show "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
+      by(auto simp add: plus_set_def inter_set_def)
+    show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
+      by(auto simp add: plus_set_def inter_set_def)
+  qed
+end (* instantiation *)
+
 end

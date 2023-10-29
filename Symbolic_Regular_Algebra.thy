@@ -9,55 +9,25 @@ theory Symbolic_Regular_Algebra
 imports Regular_Algebras Dioid_Models Kleene_Algebra_Models
 begin
 
-class inter_semilattice = inter +
-  assumes inter_assoc' [ac_simps]: "(x \<^bsup>& y) \<^bsup>& z = x \<^bsup>& (y \<^bsup>& z)"
-  and inter_comm [ac_simps] : "x \<^bsup>& y = y \<^bsup>& x"
-  and inter_idem [simp]: "x \<^bsup>& x = x"
-
-class inter_semilattice_zero = inter_semilattice + zero +  
-  assumes inter_zerol [simp]: "0 \<^bsup>& x = 0"
-  assumes inter_zeror [simp]: "x \<^bsup>& 0 = 0"
-
-class inter_semilattice_one = inter_semilattice + monoid_mult 
-
-
-class ab_inter_semilattice_zero_one = inter_semilattice_zero + ab_semigroup_add + inter_semilattice_one + 
-  assumes ex_distrib_right [simp]: "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
-  assumes ex_distrib_left [simp]: "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
-
-
-class ex_kleene_algebra = kleene_algebra + ab_inter_semilattice_zero_one
-
-lemma (in ex_kleene_algebra) dual_ex_kleene_algebra: "class.ex_kleene_algebra ((+) ) ((\<odot>) ) 1 0 (\<le>) (<) star inter"
-proof 
-  fix x y z
-  show "1 + x \<odot> x\<^sup>\<star> \<le> x\<^sup>\<star>" 
-    by simp
-  show "z + x \<odot> y \<le> y \<Longrightarrow> x\<^sup>\<star> \<odot> z \<le> y"
-    by (simp add: local.dual.star_inductl_var)
-  show "z + y \<odot> x \<le> y \<Longrightarrow> z \<odot> x\<^sup>\<star> \<le> y"
-    by (simp add: local.opp_mult_def local.star_inductl_var)
-  show "(x + y) \<^bsup>& z = x \<^bsup>& z + y \<^bsup>& z"
-    by simp
-  show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
-    by simp
-qed
-
 subsection \<open>Antimirow's Axioms\<close>
 
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
+lemma  "Predicate.eval (Predicate.Pred (\<lambda>x. x > (1::nat))) 1 = False"
+  apply auto
+  done
+
 class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
-  fixes alp :: "('a) set" ("\<bbbP>")
+  fixes alp :: "('a Predicate.pred) set" ("\<bbbP>")
+  fixes val :: "('a Predicate.pred) \<Rightarrow> 'a set"
   assumes S11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
   assumes EWP : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "0 \<^bsup>& a = 0"
-  assumes A16: "\<lbrakk>x \<in> \<bbbP>\<rbrakk> \<Longrightarrow> 1 \<^bsup>& x = 0"
-  assumes A17: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b)  = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
-  assumes A18: "\<lbrakk>x \<in> \<bbbP>; y \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y)  = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
-
+  assumes A16: "\<lbrakk>p \<in> \<bbbP>; x \<in> val p\<rbrakk> \<Longrightarrow> 1 \<^bsup>& x = 0"
+  assumes A17: "\<lbrakk>p \<in> \<bbbP>; x \<in> val p; q \<in> \<bbbP>; y \<in> val q\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b)  = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
+  assumes A18: "\<lbrakk>p \<in> \<bbbP>; x \<in> val p; q \<in> \<bbbP>; y \<in> val q\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y)  = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
 
 class Al_algebra = antimirow_base +
   assumes S12l: "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -85,11 +55,10 @@ lemma inter_prod4: "1 \<^bsup>& x = 1 \<Longrightarrow> 1 \<^bsup>& y = 0 \<Long
 
 end
 
-
 sublocale Al_algebra \<subseteq> dual: Ar_algebra
-    "(+)" "(\<odot>)" "1" "0" "(\<le>)" "(<)" "star" "inter" "alp"
+    "(+)" "1" "(\<odot>)"  "inter" "0" "(\<le>)" "(<)" "star" "alp"
 proof 
-  fix x y z a b c
+  fix x y z p q a b
   show "x \<odot> y\<odot> z= x \<odot> (y\<odot> z)"
     by (simp add: local.mult_assoc times.opp_mult_def)
   show "(x + y) \<odot> z = x \<odot> z + y \<odot> z"
@@ -118,7 +87,7 @@ proof
     by (simp add: local.A14)
   show "0 \<^bsup>& x = 0"
     by simp
-  show "x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0"
+  show "p \<in> \<bbbP> \<Longrightarrow> x \<in> val p \<Longrightarrow> 1 \<^bsup>& x = 0"
     by (simp add: local.A16)
   show "1 + x\<^sup>\<star> \<odot> x = x\<^sup>\<star>"
     by (simp add: local.S12l local.opp_mult_def)
@@ -128,10 +97,10 @@ proof
     by simp
   show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
     by simp
-  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
+  show "p \<in> \<bbbP> \<Longrightarrow> x \<in> val p \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> y \<in> val q \<Longrightarrow> x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
     by (simp add: local.A18 local.opp_mult_def)
-  show "x \<in> \<bbbP> \<Longrightarrow> a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y)"
-    by (metis \<open>x \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& x = 0\<close> local.A15 local.A18 local.annil local.inter_idem local.mult_1_left local.mult_1_right local.opp_mult_def)
+  show "p \<in> \<bbbP> \<Longrightarrow> x \<in> val p \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> y \<in> val q \<Longrightarrow> a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y) "
+    by (simp add: local.A17 local.opp_mult_def)
 qed
 
 context Al_algebra
