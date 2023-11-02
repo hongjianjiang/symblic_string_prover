@@ -18,16 +18,15 @@ lemma  "Predicate.eval (Predicate.Pred (\<lambda>x. x > (1::nat))) 1 = False"
   done
 
 class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
-  fixes alp :: "('a Predicate.pred) set" ("\<bbbP>")
-  fixes val :: "('a Predicate.pred) \<Rightarrow> 'a set"
+  fixes alp :: "'a  set" ("\<bbbP>")
   assumes S11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
   assumes EWP : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "0 \<^bsup>& a = 0"
-  assumes A16: "\<lbrakk>p \<in> \<bbbP>; x \<in> val p\<rbrakk> \<Longrightarrow> 1 \<^bsup>& x = 0"
-  assumes A17: "\<lbrakk>p \<in> \<bbbP>; x \<in> val p; q \<in> \<bbbP>; y \<in> val q\<rbrakk> \<Longrightarrow> (x \<cdot> a) \<^bsup>& (y \<cdot> b)  = (x \<^bsup>& y) \<cdot> (a \<^bsup>& b)"
-  assumes A18: "\<lbrakk>p \<in> \<bbbP>; x \<in> val p; q \<in> \<bbbP>; y \<in> val q\<rbrakk> \<Longrightarrow> (a \<cdot> x) \<^bsup>& (b \<cdot> y)  = (a \<^bsup>& b) \<cdot> (x \<^bsup>& y)"
+  assumes A16: "\<lbrakk>p \<in> \<bbbP>\<rbrakk> \<Longrightarrow> 1 \<^bsup>& p = 0"
+  assumes A17: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (p \<cdot> a) \<^bsup>& (q \<cdot> b)  = (p \<^bsup>& q) \<cdot> (a \<^bsup>& b)"
+  assumes A18: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> p) \<^bsup>& (b \<cdot> q)  = (a \<^bsup>& b) \<cdot> (p \<^bsup>& q)"
 
 class Al_algebra = antimirow_base +
   assumes S12l: "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -87,7 +86,7 @@ proof
     by (simp add: local.A14)
   show "0 \<^bsup>& x = 0"
     by simp
-  show "p \<in> \<bbbP> \<Longrightarrow> x \<in> val p \<Longrightarrow> 1 \<^bsup>& x = 0"
+  show "p \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& p = 0"
     by (simp add: local.A16)
   show "1 + x\<^sup>\<star> \<odot> x = x\<^sup>\<star>"
     by (simp add: local.S12l local.opp_mult_def)
@@ -97,9 +96,9 @@ proof
     by simp
   show "x \<^bsup>& (y + z) = x \<^bsup>& y + x \<^bsup>& z"
     by simp
-  show "p \<in> \<bbbP> \<Longrightarrow> x \<in> val p \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> y \<in> val q \<Longrightarrow> x \<odot> a \<^bsup>& (y \<odot> b) = x \<^bsup>& y \<odot> (a \<^bsup>& b)"
+  show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> p \<odot> a \<^bsup>& (q \<odot> b) = p \<^bsup>& q \<odot> (a \<^bsup>& b)"
     by (simp add: local.A18 local.opp_mult_def)
-  show "p \<in> \<bbbP> \<Longrightarrow> x \<in> val p \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> y \<in> val q \<Longrightarrow> a \<odot> x \<^bsup>& (b \<odot> y) = a \<^bsup>& b \<odot> (x \<^bsup>& y) "
+  show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> a \<odot> p \<^bsup>& (b \<odot> q) = a \<^bsup>& b \<odot> (p \<^bsup>& q)"
     by (simp add: local.A17 local.opp_mult_def)
 qed
 
@@ -187,7 +186,10 @@ notation
   sup  (infixl "\<squnion>" 65)
 
 class symbolic_algebra = A_algebra + boolean_algebra +
-  assumes inf1 : "\<lbrakk>p1 \<in> \<bbbP>; p2 \<in> \<bbbP>; x \<in> val p1; y \<in> val p2\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
-  assumes sup1 : "\<lbrakk>p1 \<in> \<bbbP>; p2 \<in> \<bbbP>; x \<in> val p1; y \<in> val p2\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
+  fixes pres :: "('a Predicate.pred) set"
+  fixes val :: "('a Predicate.pred) \<Rightarrow> 'a set"
+  assumes ii : "\<lbrakk>p \<in> pres\<rbrakk> \<Longrightarrow> val p \<subseteq> \<bbbP>" 
+  assumes inf1 : "\<lbrakk>p1 \<in> pres; p2 \<in> pres\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
+  assumes sup1 : "\<lbrakk>p1 \<in> pres; p2 \<in> pres\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
 
 end

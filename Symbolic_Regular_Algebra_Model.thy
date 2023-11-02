@@ -31,6 +31,8 @@ primrec lang :: "nat rexp \<Rightarrow> nat set \<Rightarrow> nat lan" where
 definition alpset ::"nat set" where 
   "alpset = {1,2,3,4,5}"
 
+definition alpset1 ::"nat list set" where 
+  "alpset1 = {[1],[2],[3],[4],[5]}"
 
 typedef reg_lan = "(range (%r. lang r alpset)) :: (nat list set) set"
   by auto
@@ -317,7 +319,7 @@ proof -
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
 
-interpretation lan_antimirow_l: Al_algebra "(+)" "1 :: nat lan" "(\<cdot>)" "(\<^bsup>&)" "0"  "(\<subseteq>)" "(\<subset>)" "star" "{(Predicate.Pred (\<lambda>x. x = {[(1::nat)]}))}" "\<lambda>p. {x. Predicate.eval p x}"
+interpretation lan_antimirow_l: Al_algebra "(+)" "1 :: nat lan" "(\<cdot>)" "(\<^bsup>&)" "0"  "(\<subseteq>)" "(\<subset>)" "star" "{{[1,2,3::nat]}}" 
 proof
   fix x y z:: "nat lan"
   show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -337,21 +339,21 @@ proof
   show "0 \<^bsup>& x = 0"
     by simp
 next 
-  fix p :: "nat list set Predicate.pred" and x :: "nat lan"
-  show "p \<in> {pred.Pred (\<lambda>x. x = {[1]})} \<Longrightarrow> x \<in> {x. pred.eval p x} \<Longrightarrow> 1 \<^bsup>& x = 0"
+  fix p :: "nat list set" and x :: "nat lan"
+  show "p \<in> {{[1, 2, 3]}} \<Longrightarrow> 1 \<^bsup>& p = 0"
     apply (simp add:one_set_def inter_set_def one_list_def zero_set_def)
     done
 next 
-  fix p q :: "nat list set Predicate.pred" and x y z a b :: "nat lan"
-  show "p \<in> {pred.Pred (\<lambda>x. x = {[1]})} \<Longrightarrow> x \<in> {x. pred.eval p x} \<Longrightarrow> q \<in> {pred.Pred (\<lambda>x. x = {[1]})} \<Longrightarrow> y \<in> {x. pred.eval q x} \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
+  fix p q :: "nat list set" and x y z a b :: "nat lan"
+  show "p \<in> {{[1, 2, 3]}} \<Longrightarrow> q \<in> {{[1, 2, 3]}} \<Longrightarrow> p \<cdot> a \<^bsup>& (q \<cdot> b) = p \<^bsup>& q \<cdot> (a \<^bsup>& b)"
     apply(simp add:c_prod_def inter_set_def times_list_def)
     using singleton_iff by auto
-  show "p \<in> {pred.Pred (\<lambda>x. x = {[1]})} \<Longrightarrow> x \<in> {x. pred.eval p x} \<Longrightarrow> q \<in> {pred.Pred (\<lambda>x. x = {[1]})} \<Longrightarrow> y \<in> {x. pred.eval q x} \<Longrightarrow> a \<cdot> x \<^bsup>& (b \<cdot> y) = a \<^bsup>& b \<cdot> (x \<^bsup>& y)"
+  show "p \<in> {{[1, 2, 3]}} \<Longrightarrow> q \<in> {{[1, 2, 3]}} \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
     apply(simp add:c_prod_def inter_set_def times_list_def)
     using singleton_iff by auto
 qed
 
-interpretation lan_antimirow_r: Ar_algebra"(+)" "1 :: nat lan" "(\<cdot>)" "(\<^bsup>&)" "0"  "(\<subseteq>)" "(\<subset>)" "star" "{(Predicate.Pred (\<lambda>x. x = {[(1::nat)]}))}" "\<lambda>p. {x. Predicate.eval p x}"
+interpretation lan_antimirow_r: Ar_algebra"(+)" "1 :: nat lan" "(\<cdot>)" "(\<^bsup>&)" "0"   "(\<subseteq>)" "(\<subset>)" "star" "{{[1,2,3::nat]}}" 
 proof
   fix x y z :: "'a lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
@@ -516,14 +518,8 @@ qed
 instantiation reg_lan ::  Ar_algebra
 begin
 
-definition alp_reg_lan :: "reg_lan Predicate.pred set" where 
-  "alp_reg_lan = {(Predicate.Pred (\<lambda>x. x = Abs_reg_lan {[(1::nat)]}))}"
-
-
-definition val_reg_lan :: "reg_lan Predicate.pred \<Rightarrow> reg_lan set" where 
-"val_reg_lan p = {a. Predicate.eval p a}"
-
-
+  lift_definition alp_reg_lan :: "reg_lan"
+  is alpset1  
 instance proof
   fix x :: "reg_lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
@@ -567,13 +563,6 @@ next
       done
   qed
 next 
-  fix x :: "reg_lan" and p :: "reg_lan Predicate.pred"
-  show "p \<in> \<bbbP> \<Longrightarrow> x \<in> val p \<Longrightarrow> 1 \<^bsup>& x = 0" 
-    apply (simp add:alp_reg_lan_def one_reg_lan_def inter_reg_lan_def zero_reg_lan_def one_set_def one_list_def inter_set_def zero_set_def)
-    
-    
-    by (metis Symbolic_Regular_Algebra_Model.lang.simps(3) Symbolic_Regular_Algebra_Model.one_reg_lan.rep_eq Symbolic_Regular_Algebra_Model.one_reg_lan_def Symbolic_Regular_Algebra_Model.zero_reg_lan_def insertI1 insert_is_Un lan_antimirow_l.dual.EWP list.distinct(1) one_list_def one_set_def plus_set_def r_lang.abs_eq r_lang.rep_eq singletonD)
-next 
   fix x y :: "reg_lan"
   show "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
     apply (cases "1 \<^bsup>& x = 0")  
@@ -611,6 +600,13 @@ next
     qed
   qed
 next 
+  fix p :: "reg_lan"
+  show "p \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& p = 0"
+    apply (auto simp:alp_reg_lan_def)
+    apply transfer
+     apply auto 
+    sledgehammer
+
   fix x y a b  :: "reg_lan"
   show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
     apply(simp add:alp_reg_lan_def inter_reg_lan_def times_reg_lan_def)
