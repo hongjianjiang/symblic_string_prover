@@ -18,7 +18,7 @@ lemma  "Predicate.eval (Predicate.Pred (\<lambda>x. x > (1::nat))) 1 = False"
   done
 
 class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
-  fixes alp :: "'a  set" ("\<bbbP>")
+  fixes alp :: "'a set" ("\<bbbP>")
   assumes S11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
   assumes EWP : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
@@ -185,11 +185,11 @@ notation
   inf  (infixl "\<sqinter>" 70) and
   sup  (infixl "\<squnion>" 65)
 
-class symbolic_algebra = A_algebra + boolean_algebra +
+(*class symbolic_algebra = A_algebra + boolean_algebra +
   fixes pres :: "('a Predicate.pred) set"
   fixes val :: "('a Predicate.pred) \<Rightarrow> 'a set"
   assumes ii : "\<lbrakk>p \<in> pres\<rbrakk> \<Longrightarrow> val p \<subseteq> \<bbbP>" 
   assumes inf1 : "\<lbrakk>p1 \<in> pres; p2 \<in> pres\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
   assumes sup1 : "\<lbrakk>p1 \<in> pres; p2 \<in> pres\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
-
+*)
 end

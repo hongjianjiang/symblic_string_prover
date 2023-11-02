@@ -29,10 +29,10 @@ primrec lang :: "nat rexp \<Rightarrow> nat set \<Rightarrow> nat lan" where
 | "lang (Inter x y) as  = lang x as \<^bsup>& lang y as"
 
 definition alpset ::"nat set" where 
-  "alpset = {1,2,3,4,5}"
+  "alpset = {1}"
 
-definition alpset1 ::"nat list set" where 
-  "alpset1 = {[1],[2],[3],[4],[5]}"
+definition alpset1 ::"nat lan set" where 
+  "alpset1 = {0}"
 
 typedef reg_lan = "(range (%r. lang r alpset)) :: (nat list set) set"
   by auto
@@ -515,11 +515,17 @@ next
     using rexp_ewp.simps(8) by fastforce
 qed
 
+
+
+
 instantiation reg_lan ::  Ar_algebra
 begin
 
-  lift_definition alp_reg_lan :: "reg_lan"
-  is alpset1  
+  lift_definition alp_reg_lan :: "reg_lan set"
+  is alpset1 apply(simp add:alpset_def alpset1_def)  
+    using Symbolic_Regular_Algebra_Model.lang.simps(1) by blast
+
+
 instance proof
   fix x :: "reg_lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
@@ -602,16 +608,17 @@ next
 next 
   fix p :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& p = 0"
-    apply (auto simp:alp_reg_lan_def)
     apply transfer
-     apply auto 
-    sledgehammer
-
-  fix x y a b  :: "reg_lan"
-  show "x \<in> \<bbbP> \<Longrightarrow> y \<in> \<bbbP> \<Longrightarrow> x \<cdot> a \<^bsup>& (y \<cdot> b) = x \<^bsup>& y \<cdot> (a \<^bsup>& b)"
-    apply(simp add:alp_reg_lan_def inter_reg_lan_def times_reg_lan_def)
-    using reg_lan.Rep_reg_lan_inverse
-    sledgehammer
+    by (simp add: alpset1_def)
+next
+  fix p q a b  :: "reg_lan"
+  show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> p \<cdot> a \<^bsup>& (q \<cdot> b) = p \<^bsup>& q \<cdot> (a \<^bsup>& b)"
+    apply transfer
+    by (metis ab_near_semiring_one_zerol_class.annil alpset1_def inter_zeror singletonD)
+next 
+  fix p q a b  :: "reg_lan"
+  show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
+    by (metis Symbolic_Regular_Algebra_Model.zero_reg_lan_def ab_near_semiring_one_zero_class.annir alp_reg_lan.abs_eq alpset1_def imageE inter_zeror singletonD)
 qed
 end
 
