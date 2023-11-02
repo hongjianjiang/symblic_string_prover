@@ -32,7 +32,7 @@ definition alpset ::"nat set" where
   "alpset = {1}"
 
 definition alpset1 ::"nat lan set" where 
-  "alpset1 = {0}"
+  "alpset1 = {{[1]}}"
 
 typedef reg_lan = "(range (%r. lang r alpset)) :: (nat list set) set"
   by auto
@@ -523,7 +523,7 @@ begin
 
   lift_definition alp_reg_lan :: "reg_lan set"
   is alpset1 apply(simp add:alpset_def alpset1_def)  
-    using Symbolic_Regular_Algebra_Model.lang.simps(1) by blast
+    by (metis Symbolic_Regular_Algebra_Model.lang.simps(1) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.lang.simps(3) one_list_def one_set_def rangeI zero_set_def)
 
 
 instance proof
@@ -609,16 +609,20 @@ next
   fix p :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& p = 0"
     apply transfer
-    by (simp add: alpset1_def)
+    apply (simp add: alpset1_def)
+    by (metis Nil_in_shufflesI UnCI insert_absorb inter_zeror lan_antimirow_l.dual.EWP not_Cons_self2 one_list_def one_set_def plus_set_def shuffles.simps(2) singleton_insert_inj_eq' zero_set_def)
 next
   fix p q a b  :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> p \<cdot> a \<^bsup>& (q \<cdot> b) = p \<^bsup>& q \<cdot> (a \<^bsup>& b)"
     apply transfer
-    by (metis ab_near_semiring_one_zerol_class.annil alpset1_def inter_zeror singletonD)
+    apply(simp add:alpset1_def c_prod_def inter_set_def times_list_def)
+    by fastforce
 next 
   fix p q a b  :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
-    by (metis Symbolic_Regular_Algebra_Model.zero_reg_lan_def ab_near_semiring_one_zero_class.annir alp_reg_lan.abs_eq alpset1_def imageE inter_zeror singletonD)
+    apply transfer
+    apply(simp add:alpset1_def c_prod_def inter_set_def times_list_def)
+    by fastforce
 qed
 end
 
