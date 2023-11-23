@@ -18,8 +18,13 @@ text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
 adapted from there.\<close>
 
+
+definition test1 :: "nat set \<Rightarrow> (nat \<Rightarrow> bool) \<Rightarrow> nat list" where 
+"test1 ns f = sorted_list_of_set {x. f x \<and> x \<in> ns}"
+
+
 primrec lang :: "nat rexp \<Rightarrow> nat set \<Rightarrow> nat lan" where
- "lang (Zero) as = 0"
+  "lang (Zero) as = 0"
 | "lang (One) as = 1" 
 | "lang (Atom a) as = {[a]}"
 | "lang (Sym f) as = {[a]|a. f a \<and> a \<in> as}"
@@ -28,14 +33,19 @@ primrec lang :: "nat rexp \<Rightarrow> nat set \<Rightarrow> nat lan" where
 | "lang (Star x) as = (lang x as)\<^sup>\<star>" 
 | "lang (Inter x y) as  = lang x as \<^bsup>& lang y as"
 
+lemma "[2] : lang (Sym (\<lambda>x. x \<noteq> 0)) {0, 1,2}"
+  apply auto
+  done
+
 definition alpset ::"nat set" where 
-  "alpset = {1}"
+  "alpset = {1, 2}"
 
 definition alpset1 ::"nat lan set" where 
-  "alpset1 = {{[1]}}"
+  "alpset1 = {{[1],[2]}}"
 
 typedef reg_lan = "(range (%r. lang r alpset)) :: (nat list set) set"
   by auto
+
 
 setup_lifting type_definition_reg_lan
 
@@ -516,14 +526,14 @@ next
 qed
 
 
-
-
 instantiation reg_lan ::  Ar_algebra
 begin
 
   lift_definition alp_reg_lan :: "reg_lan set"
-  is alpset1 apply(simp add:alpset_def alpset1_def)  
-    by (metis Symbolic_Regular_Algebra_Model.lang.simps(1) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.lang.simps(3) one_list_def one_set_def rangeI zero_set_def)
+  is alpset1 
+    apply(simp add:alpset_def alpset1_def)
+    apply transfer
+    sorry
 
 
 instance proof
@@ -610,13 +620,13 @@ next
   show "p \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& p = 0"
     apply transfer
     apply (simp add: alpset1_def)
-    by (metis Nil_in_shufflesI UnCI insert_absorb inter_zeror lan_antimirow_l.dual.EWP not_Cons_self2 one_list_def one_set_def plus_set_def shuffles.simps(2) singleton_insert_inj_eq' zero_set_def)
+    by (metis Groups.add_ac(2) Un_insert_right insert_iff lan_antimirow_l.dual.EWP neq_Nil_conv one_list_def one_set_def plus_set_def singletonD)
 next
   fix p q a b  :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> p \<cdot> a \<^bsup>& (q \<cdot> b) = p \<^bsup>& q \<cdot> (a \<^bsup>& b)"
     apply transfer
     apply(simp add:alpset1_def c_prod_def inter_set_def times_list_def)
-    by fastforce
+    by auto
 next 
   fix p q a b  :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
@@ -654,4 +664,5 @@ theorem arden_regexp_r:
   shows "x \<sim> z \<cdot>\<^sub>r y\<^sup>\<star>\<^sub>r"
   using assms
   by (metis lang.simps(5) lang.simps(6) lang.simps(7) rexp.distinct(2) arden_r r_lang.abs_eq r_lang.rep_eq rexp_ewp_l_ewp)
+
 end

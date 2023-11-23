@@ -13,10 +13,6 @@ subsection \<open>Antimirow's Axioms\<close>
 
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
-lemma  "Predicate.eval (Predicate.Pred (\<lambda>x. x > (1::nat))) 1 = False"
-  apply auto
-  done
-
 class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
   fixes alp :: "'a set" ("\<bbbP>")
   assumes S11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
