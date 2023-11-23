@@ -8,7 +8,7 @@ datatype 'a rexp =
 Zero 
 | One 
 | Atom 'a
-| Sym  "'a \<Rightarrow> bool"
+| Sym  "'a list"
 | Plus "'a rexp" "'a rexp"
 | Times "'a rexp" "'a rexp"
 | Star "'a rexp"
@@ -19,33 +19,33 @@ images of regular expressions in the set of languages has also been
 adapted from there.\<close>
 
 
-definition test1 :: "nat set \<Rightarrow> (nat \<Rightarrow> bool) \<Rightarrow> nat list" where 
-"test1 ns f = sorted_list_of_set {x. f x \<and> x \<in> ns}"
+definition test :: "(nat \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> bool" where 
+"test f n b =  (f n \<and> b)"
 
-
-primrec lang :: "nat rexp \<Rightarrow> nat set \<Rightarrow> nat lan" where
+primrec lang :: "nat rexp \<Rightarrow> nat list set \<Rightarrow> nat lan" where
   "lang (Zero) as = 0"
 | "lang (One) as = 1" 
 | "lang (Atom a) as = {[a]}"
-| "lang (Sym f) as = {[a]|a. f a \<and> a \<in> as}"
+| "lang (Sym l) as = as"
 | "lang (Plus x y) as = lang x as + lang y as"
 | "lang (Times x y) as = lang x as \<cdot> lang y as"
 | "lang (Star x) as = (lang x as)\<^sup>\<star>" 
 | "lang (Inter x y) as  = lang x as \<^bsup>& lang y as"
 
-lemma "[2] : lang (Sym (\<lambda>x. x \<noteq> 0)) {0, 1,2}"
-  apply auto
-  done
 
-definition alpset ::"nat set" where 
-  "alpset = {1, 2}"
+definition alpset ::"nat list set" where 
+  "alpset = {[1,2], [1,3]}"
 
 definition alpset1 ::"nat lan set" where 
-  "alpset1 = {{[1],[2]}}"
+  "alpset1 = {{[1,2], [1,3]}}"
 
 typedef reg_lan = "(range (%r. lang r alpset)) :: (nat list set) set"
   by auto
 
+lemma "{[Suc 0],[2],[3]} \<in> range (\<lambda>x. Symbolic_Regular_Algebra_Model.lang x {[Suc 0],[2],[3]})"
+  using Symbolic_Regular_Algebra_Model.lang.simps(4)
+  thm Collect_mem_eq
+  by (metis Collect_mem_eq rangeI)
 
 setup_lifting type_definition_reg_lan
 
@@ -409,7 +409,7 @@ declare Rep_reg_lan [simp]
 declare Rep_reg_lan_inverse [simp]
 declare Abs_reg_lan_inverse [simp]
 
-lemma rexp_ewp_l_ewp: "l_ewp (lang x alpset) = rexp_ewp x"
+lemma rexp_ewp_l_ewp: "[]\<notin> alpset \<Longrightarrow> l_ewp (lang x alpset) = rexp_ewp x"
 proof (induct x)
   case (Star x) thus ?case
     by (metis lang.simps(7) kleene_algebra_class.dual.star_plus_one l_ewp_def one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp.simps(6))
@@ -533,14 +533,14 @@ begin
   is alpset1 
     apply(simp add:alpset_def alpset1_def)
     apply transfer
-    sorry
+    by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) rangeI)
 
 
 instance proof
   fix x :: "reg_lan"
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
     by (metis kleene_algebra_class.dual.star2)
-next
+next                                         
   fix x :: "reg_lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
     by (rule kleene_algebra_class.star_unfoldr_eq)
@@ -571,7 +571,7 @@ next
       apply (simp add: zero_set_def)
       subgoal 
         apply (simp add:inter_set_def one_set_def one_list_def plus_set_def)
-        by (metis (mono_tags, lifting) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.distinct(2) insert_absorb insert_is_Un join.sup.absorb_iff2 l_ewp_def one_list_def one_set_def plus_set_def rexp_ewp_l_ewp)
+        by (smt (verit, del_insts) Symbolic_Regular_Algebra_Model.lang.simps(2) Symbolic_Regular_Algebra_Model.rexp.distinct(2) alpset_def bot.extremum emptyE insertE insert_is_Un insert_subsetI l_ewp_def neq_Nil_conv one_set_def rexp_ewp_l_ewp)
       subgoal 
       using zero_set_def by auto
     subgoal 
@@ -657,12 +657,13 @@ theorem arden_regexp_l:
   shows "x \<sim> y\<^sup>\<star>\<^sub>r \<cdot>\<^sub>r z"
   using assms
   apply transfer
-  by (metis lang.simps(5) lang.simps(6) lang.simps(7) rexp.distinct(2) arden_l rexp_ewp_l_ewp)
+  by (metis Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.lang.simps(7) Symbolic_Regular_Algebra_Model.rexp.distinct(2) alpset_def arden_l insertE neq_Nil_conv rexp_ewp_l_ewp singletonD)
 
 theorem arden_regexp_r: 
   assumes "ro(y) = 0\<^sub>r" "x \<sim> x \<cdot>\<^sub>r y +\<^sub>r z" 
   shows "x \<sim> z \<cdot>\<^sub>r y\<^sup>\<star>\<^sub>r"
   using assms
-  by (metis lang.simps(5) lang.simps(6) lang.simps(7) rexp.distinct(2) arden_r r_lang.abs_eq r_lang.rep_eq rexp_ewp_l_ewp)
+  apply transfer
+  by (metis Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.lang.simps(7) Symbolic_Regular_Algebra_Model.rexp.distinct(2) alpset_def arden_r insertE neq_Nil_conv rexp_ewp_l_ewp singletonD)
 
 end
