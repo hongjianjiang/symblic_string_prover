@@ -19,14 +19,14 @@ images of regular expressions in the set of languages has also been
 adapted from there.\<close>
 
 
-definition test :: "(nat \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> bool" where 
-"test f n b =  (f n \<and> b)"
+definition test :: "nat \<Rightarrow> bool \<Rightarrow> bool" where 
+"test n b =  (n = 1\<and> b)"
 
 primrec lang :: "nat rexp \<Rightarrow> nat list set \<Rightarrow> nat lan" where
   "lang (Zero) as = 0"
 | "lang (One) as = 1" 
 | "lang (Atom a) as = {[a]}"
-| "lang (Sym l) as = as"
+| "lang (Sym l) as = {l}"
 | "lang (Plus x y) as = lang x as + lang y as"
 | "lang (Times x y) as = lang x as \<cdot> lang y as"
 | "lang (Star x) as = (lang x as)\<^sup>\<star>" 
@@ -34,18 +34,24 @@ primrec lang :: "nat rexp \<Rightarrow> nat list set \<Rightarrow> nat lan" wher
 
 
 definition alpset ::"nat list set" where 
-  "alpset = {[1,2], [1,3]}"
+  "alpset = {[1,2], [1,3], [3]}"
 
 definition alpset1 ::"nat lan set" where 
-  "alpset1 = {{[1,2], [1,3]}}"
+  "alpset1 = {{[1,2]}}"
 
 typedef reg_lan = "(range (%r. lang r alpset)) :: (nat list set) set"
   by auto
 
-lemma "{[Suc 0],[2],[3]} \<in> range (\<lambda>x. Symbolic_Regular_Algebra_Model.lang x {[Suc 0],[2],[3]})"
-  using Symbolic_Regular_Algebra_Model.lang.simps(4)
-  thm Collect_mem_eq
-  by (metis Collect_mem_eq rangeI)
+definition f ::"nat list" where 
+  "f = ([1,2])"
+
+thm Symbolic_Regular_Algebra_Model.lang.simps(4)[of f alpset]
+
+lemma "{[1,5]} \<in> range (\<lambda>x. Symbolic_Regular_Algebra_Model.lang x {[1,2], [1,3], [3]})"
+  using Symbolic_Regular_Algebra_Model.lang.simps(4) by blast
+
+  
+  
 
 setup_lifting type_definition_reg_lan
 
@@ -392,7 +398,7 @@ primrec rexp_ewp :: "'a rexp \<Rightarrow> bool" where
   "rexp_ewp (s \<cdot>\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
   "rexp_ewp (s &\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
   "rexp_ewp (s\<^sup>\<star>\<^sub>r) = True"| 
-  "rexp_ewp (Sym f)= False"|
+  "rexp_ewp (Sym l)= ([] = l)"|
   "rexp_ewp (Atom a) = False"
 
 abbreviation "ro(s) \<equiv> (if (rexp_ewp s) then 1\<^sub>r else 0\<^sub>r)"
@@ -409,11 +415,11 @@ declare Rep_reg_lan [simp]
 declare Rep_reg_lan_inverse [simp]
 declare Abs_reg_lan_inverse [simp]
 
-lemma rexp_ewp_l_ewp: "[]\<notin> alpset \<Longrightarrow> l_ewp (lang x alpset) = rexp_ewp x"
+lemma rexp_ewp_l_ewp: "l_ewp (lang x alpset) = rexp_ewp x"
 proof (induct x)
   case (Star x) thus ?case
     by (metis lang.simps(7) kleene_algebra_class.dual.star_plus_one l_ewp_def one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp.simps(6))
-qed (simp_all add:l_ewp_def zero_set_def one_set_def one_list_def plus_set_def c_prod_def times_list_def inter_set_def )
+qed (simp_all add:l_ewp_def zero_set_def one_set_def one_list_def plus_set_def c_prod_def times_list_def inter_set_def)
 
 theorem regexp_ewp:
   defines P_def: "P(t) \<equiv> \<exists> t'. t \<sim> ro(t) +\<^sub>r t' \<and> ro(t') = 0\<^sub>r"
@@ -517,7 +523,8 @@ next
   fix x 
   show "P (Sym x)"
     apply  (simp add:P_def r_lang_def) 
-    using rexp_ewp.simps(7) by fastforce
+    using rexp_ewp.simps(7) 
+    by (metis Symbolic_Regular_Algebra_Model.lang.simps(1) Symbolic_Regular_Algebra_Model.lang.simps(4) add.right_neutral one_list_def one_set_def rexp_ewp.simps(1))
 next 
   fix x 
   show "P (Atom x)"
@@ -533,8 +540,7 @@ begin
   is alpset1 
     apply(simp add:alpset_def alpset1_def)
     apply transfer
-    by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) rangeI)
-
+    using Symbolic_Regular_Algebra_Model.lang.simps(4) by blast
 
 instance proof
   fix x :: "reg_lan"
