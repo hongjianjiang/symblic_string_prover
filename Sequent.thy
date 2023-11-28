@@ -14,21 +14,27 @@ type_synonym rep = string
 type_synonym crexp = "char rexp"
 
 
-datatype bterm = Var vname | Func \<open>bterm list\<close>
+datatype bterm = Var nat | Conc bterm bterm
 
 datatype form = 
     Eq vname bterm                      ("_ =:= _" [61,61] 61)
   | Neq vname bterm                     ("_ =!= _" [61,61] 61)
-  | Concat vname vname vname            ("_ =:= _;;/ _" [61,61,61] 61)
   | Member vname crexp
   | NMember vname crexp
   | Dis form form                      
   | Con form form                      
   | Neg form                           
 
+
+primrec
+  evalt :: \<open>(nat \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'c list \<Rightarrow> 'c) \<Rightarrow> 'a term \<Rightarrow> 'c\<close>  where
+  \<open>evalt e f (Var n) = e n\<close>
+| \<open>evalt e f (App a ts) = f a (evalts e f ts)\<close>
+
+
+
 primrec eval :: "form \<Rightarrow> bool" where
   "eval (Eq x y) = (x = y)" |
-  "eval (Concat z x y) = (z = x @ y)" |
   "eval (Neg f) = (eval f)" |
   "eval (Dis f1 f2) = (eval f1 \<or> eval f2)" |
   "eval (Con f1 f2) = (eval f1 \<and> eval f2)" |
