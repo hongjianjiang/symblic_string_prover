@@ -18,19 +18,15 @@ text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
 adapted from there.\<close>
 
-
-definition test :: "nat \<Rightarrow> bool \<Rightarrow> bool" where 
-"test n b =  (n = 1\<and> b)"
-
-primrec lang :: "nat rexp \<Rightarrow> nat list set \<Rightarrow> nat lan" where
-  "lang (Zero) as = 0"
-| "lang (One) as = 1" 
-| "lang (Atom a) as = {[a]}"
-| "lang (Sym l) as = {l}"
-| "lang (Plus x y) as = lang x as + lang y as"
-| "lang (Times x y) as = lang x as \<cdot> lang y as"
-| "lang (Star x) as = (lang x as)\<^sup>\<star>" 
-| "lang (Inter x y) as  = lang x as \<^bsup>& lang y as"
+primrec lang :: "'a rexp \<Rightarrow> 'a lan" where
+  "lang (Zero) = 0"
+| "lang (One) = 1" 
+| "lang (Atom a) = {[a]}"
+| "lang (Sym l) = {l}"
+| "lang (Plus x y) = lang x + lang y"
+| "lang (Times x y) = lang x \<cdot> lang y"
+| "lang (Star x) = (lang x)\<^sup>\<star>" 
+| "lang (Inter x y)  = lang x \<^bsup>& lang y"
 
 
 definition alpset ::"nat list set" where 
@@ -39,19 +35,8 @@ definition alpset ::"nat list set" where
 definition alpset1 ::"nat lan set" where 
   "alpset1 = {{[1,2]}}"
 
-typedef reg_lan = "(range (%r. lang r alpset)) :: (nat list set) set"
-  by auto
-
-definition f ::"nat list" where 
-  "f = ([1,2])"
-
-thm Symbolic_Regular_Algebra_Model.lang.simps(4)[of f alpset]
-
-lemma "{[1,5]} \<in> range (\<lambda>x. Symbolic_Regular_Algebra_Model.lang x {[1,2], [1,3], [3]})"
-  using Symbolic_Regular_Algebra_Model.lang.simps(4) by blast
-
-  
-  
+typedef reg_lan = "(range (%r. lang r)) :: (nat list set) set"
+  by auto 
 
 setup_lifting type_definition_reg_lan
 
@@ -405,7 +390,7 @@ abbreviation "ro(s) \<equiv> (if (rexp_ewp s) then 1\<^sub>r else 0\<^sub>r)"
 
 lift_definition r_ewp :: "reg_lan \<Rightarrow> bool" is "l_ewp" .
 
-lift_definition r_lang :: "nat rexp \<Rightarrow> reg_lan"  is "\<lambda>x. lang x alpset"
+lift_definition r_lang :: "nat rexp \<Rightarrow> reg_lan"  is "\<lambda>x. lang x"
   by (simp)
 
 abbreviation r_sim :: "nat rexp \<Rightarrow> nat rexp \<Rightarrow> bool" (infix "\<sim>" 50) where
@@ -415,7 +400,7 @@ declare Rep_reg_lan [simp]
 declare Rep_reg_lan_inverse [simp]
 declare Abs_reg_lan_inverse [simp]
 
-lemma rexp_ewp_l_ewp: "l_ewp (lang x alpset) = rexp_ewp x"
+lemma rexp_ewp_l_ewp: "l_ewp (lang x) = rexp_ewp x"
 proof (induct x)
   case (Star x) thus ?case
     by (metis lang.simps(7) kleene_algebra_class.dual.star_plus_one l_ewp_def one_list_def one_set_def plus_ord_class.less_eq_def rexp_ewp.simps(6))
