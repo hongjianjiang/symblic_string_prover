@@ -50,6 +50,10 @@ primrec eval :: \<open>(nat \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'c
 | "eval e f g c (Con m n) = (eval e f g c m \<and> eval e f g c n)"
 | "eval e f g c (Neg m) = (\<not> eval e f g c m)"
 
+definition model :: \<open>(nat \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'c list \<Rightarrow> 'c) \<Rightarrow> ('b \<Rightarrow> 'c list \<Rightarrow> 'c  \<Rightarrow> bool) \<Rightarrow>
+    ('c  \<Rightarrow> 'c \<Rightarrow> 'c  \<Rightarrow> bool)  \<Rightarrow>  ('a, 'b, 'c) form list \<Rightarrow> ('a, 'b, 'c) form \<Rightarrow> bool\<close> ("_,_,_,_,_ \<Turnstile> _" [50,50] 50) where
+  \<open>(e,f,g,c,ps \<Turnstile> p) = (list_all (eval e f g c) ps \<longrightarrow> eval e f g c p)\<close>
+
 
 fun empty_intersection_list :: "'c rexp list \<Rightarrow> bool" where 
   "empty_intersection_list fs = (List.foldl (\<inter>) (lang (hd fs)) (map lang (tl fs)) = {})"
