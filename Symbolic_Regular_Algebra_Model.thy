@@ -29,7 +29,7 @@ primrec lang :: "'a rexp \<Rightarrow> 'a lan" where
 | "lang (Inter x y)  = lang x \<^bsup>& lang y"
 
 fun regexp_compl ::"'a rexp \<Rightarrow> 'a rexp \<Rightarrow> bool" where 
-  "regexp_compl r1 r2 = (UNIV = lang r1 \<union> lang r2)"
+  "regexp_compl r1 r2 = (UNIV - lang r1 = lang r2)"
 
 fun regexp_empty ::"'a rexp \<Rightarrow> 'a rexp \<Rightarrow> bool" where 
   "regexp_empty r1 r2 = (lang r1 \<inter> lang r2 = {})"
