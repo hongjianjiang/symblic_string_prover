@@ -2,33 +2,65 @@
 section \<open>Sequent Calculus\<close>
 
 theory Sequent 
-  imports Symbolic_Regular_Algebra_Model 
+  imports Symbolic_Regular_Algebra_Model "HOL-Library.Multiset"
 begin
 
-section \<open>Terms and 'a formulae\<close>
+section \<open>Terms and 'u formulae\<close>
 
 text \<open>
-\label{sec:terms} The datatypes of terms and 'a formulae are defined as follows:
+\label{sec:terms} The datatypes of terms and 'u formulae are defined as follows:
 \<close>
 
-datatype bterm = Var nat | Conc bterm bterm
 
-datatype 'a form = 
-    EqAtom "bterm" "bterm"                      
-  | NeqAtom "bterm" "bterm" 
-  | Member "bterm" "'a rexp"
-  | Nmember "bterm" "'a rexp"
-  | Dis "'a form" "'a form"                     
-  | Con "'a form" "'a form"                      
-  | Neg "'a form"     
+type_synonym var_sym = string
+type_synonym fun_sym = string
+type_synonym pred_sym = string
+type_synonym 'u var_denot = \<open>var_sym \<Rightarrow> 'u\<close>
+type_synonym 'u fun_denot = \<open>fun_sym \<Rightarrow> 'u list \<Rightarrow> 'u\<close>
+type_synonym 'u pred_denot = \<open>pred_sym \<Rightarrow> 'u list \<Rightarrow> bool\<close>
+
+datatype fterm = Var var_sym | Fun fun_sym \<open>fterm list\<close>
+
+datatype 't literal = 
+  is_pos : Pos (get_pred: pred_sym) (get_terms: "'t list")
+  | Neg (get_pred: pred_sym) (get_terms: "'t list")
+
+fun complement :: "'t literal \<Rightarrow> 't literal" ("_\<^sup>c" [300] 300) where
+ "(Pos P ts)\<^sup>c = Neg P ts"
+|"(Neg P ts)\<^sup>c = Pos P ts"
+
+fun fnat :: "nat fun_denot" where 
+  "fnat f [n,m] = (if f = ''udd'' then n + m else
+                if f = ''mul'' then n * m else 0)"
+| "fnat f [] = (if f = ''one'' then 1 else if f = ''zero'' then 0 else 0)"
+| "fnat f us = 0"
+
+fun enat ::"nat var_denot" where 
+"enat x = (if x = ''x'' then 26 else if x = ''y'' then 5 else 0)"
+
+fun evalt ::"'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> fterm \<Rightarrow> 'u" where 
+  "evalt E F (Var x) = E x"
+| "evalt E F (Fun f ts) = F f (map (evalt E F) ts)"
+
+abbreviation evalts :: "'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> fterm list \<Rightarrow> 'u list" where 
+"evalts E F ts \<equiv> map (evalt E F) ts"
+
+fun evall ::"'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> 'u pred_denot \<Rightarrow> fterm literal \<Rightarrow> bool" where 
+"evall E F \<Gamma> (Pos p ts) \<longleftrightarrow> (\<Gamma> p (evalts E F ts))" |
+"evall E F \<Gamma> (Neg p ts) \<longleftrightarrow> \<not> (\<Gamma> p (evalts E F ts))"
 
 
-primrec
-  evalt :: \<open>(nat \<Rightarrow> 'a) \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow>  bterm \<Rightarrow> 'a\<close>  where
-  \<open>evalt e f (Var n) = e n\<close> |
-  \<open>evalt e f (Conc m n) = f (evalt e f m) (evalt e f n)\<close>
+datatype 'u form = 
+    EqAtom "fterm" "fterm"                      
+  | NeqAtom "fterm" "fterm" 
+  | Member "fterm" "'u rexp"
+  | Nmember "fterm" "'u rexp"
+  | Dis "'u form" "'u form"                     
+  | Con "'u form" "'u form"                      
+  | Neg "'u form"     
 
-primrec eval :: \<open>(nat \<Rightarrow> 'a) \<Rightarrow>  ('a  \<Rightarrow> 'a  \<Rightarrow> 'a)  \<Rightarrow>  'a form \<Rightarrow> bool\<close> where
+
+primrec eval :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> 'u form \<Rightarrow> bool\<close> where
   "eval e f (EqAtom x y) = (evalt e f x = evalt e f y)" 
 | "eval e f (NeqAtom x y) = (evalt e f x \<noteq> evalt e f y)" 
 | "eval e f (Member x r) = ([evalt e f x] \<in> lang r)"
@@ -37,91 +69,131 @@ primrec eval :: \<open>(nat \<Rightarrow> 'a) \<Rightarrow>  ('a  \<Rightarrow> 
 | "eval e f (Con m n) = (eval e f m \<and> eval e f n)"
 | "eval e f (Neg m) = (\<not> eval e f m)"
 
-definition model :: \<open>(nat \<Rightarrow> 'a) \<Rightarrow> ('a  \<Rightarrow> 'a \<Rightarrow> 'a )  \<Rightarrow>  'a form list \<Rightarrow> 'a form \<Rightarrow> bool\<close> ("_,_,_ \<Turnstile> _" [50,50] 50) where
+
+definition model :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow>  'u form list \<Rightarrow> 'u form \<Rightarrow> bool\<close> ("_,_,_ \<Turnstile> _" [50,50] 50) where
   \<open>(e,f,ps \<Turnstile> p) = (list_all (eval e f) ps \<longrightarrow> eval e f p)\<close>
 
-fun empty_intersection_list :: "'a rexp list \<Rightarrow> bool" where 
-  "empty_intersection_list fs = (List.foldl (\<inter>) (lang (hd fs)) (map lang (tl fs)) = {})"
+fun empty_intersection_set :: "'u rexp list \<Rightarrow> bool" where 
+  "empty_intersection_set fs = (\<Inter>(lang ` set fs) = {} \<and> length fs > 1 )"
 
-fun subset_intersect_list :: "'a rexp \<Rightarrow> 'a rexp list \<Rightarrow> bool" where 
-  "subset_intersect_list r fs = (List.foldl (\<inter>) (lang (hd fs)) (map lang (tl fs)) \<subseteq> lang r)"
+fun subset_intersect_set :: "'u rexp \<Rightarrow> 'u rexp set \<Rightarrow> bool" where 
+  "subset_intersect_set r fs = (\<Inter>(lang ` fs) \<subseteq> lang r)"
 
-fun eq_len_intersect :: "'a rexp \<Rightarrow> 'a rexp list \<Rightarrow> bool" where 
-  "eq_len_intersect r fs = (List.foldl (\<inter>) (lang (hd fs)) (map lang (tl fs)) = lang r \<and> length fs > 1)"
+fun eq_len_intersect :: "'u rexp \<Rightarrow> 'u rexp list \<Rightarrow> bool" where 
+  "eq_len_intersect r fs = (\<Inter>(lang ` set fs) = lang r \<and> length fs > 1)"
 
-inductive One_SC :: \<open>'a form list \<Rightarrow> bool\<close> (\<open>\<turnstile> _\<close> 0) where
-  AlphaCon:      \<open>\<turnstile> A # B # G \<Longrightarrow> \<turnstile> Dis A B # G\<close>
-| AlphaNegOr:    \<open>\<turnstile> Neg A # Neg B # G \<Longrightarrow> \<turnstile> Neg (Con A B) # G\<close>
-| AlphaOr:       \<open>\<turnstile> A # G \<Longrightarrow> \<turnstile> B # G \<Longrightarrow> \<turnstile> Con A B # G\<close>
-| AlphaNegAnd:   \<open>\<turnstile> Neg A # G \<Longrightarrow> \<turnstile> Neg B # G \<Longrightarrow> \<turnstile> Neg (Dis A B) # G\<close>
-| AlphaNegNeg:   \<open>\<turnstile> A # G \<Longrightarrow> \<turnstile> Neg (Neg A) # G\<close>
-| NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> (Member x ec) # G \<Longrightarrow> \<turnstile> (Nmember x e) # G\<close>
-| Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> Member x e # G \<Longrightarrow> \<turnstile> Member x ec # G \<Longrightarrow>  \<turnstile> G\<close>
-| EqProp:        \<open>\<turnstile> Member x e # EqAtom x y # Member y e # G \<Longrightarrow> \<turnstile> Member x e # EqAtom x y # G\<close>
-| NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<turnstile> Member x e1 # Member y e2 # G \<Longrightarrow> \<turnstile> Member x e1 # NeqAtom x y # Member y e2 # G\<close>
-| EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<turnstile> Member x e # Eq x y # G \<Longrightarrow> \<turnstile> Member x e # Member y e # G\<close>
-| NeqPropElim:   \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> (Member x e) # (Member y e) # G \<Longrightarrow>  \<turnstile> (Member x e) # (Neq x y) # G\<close>
-| Close:         \<open>empty_intersection_list fs \<Longrightarrow> \<turnstile> (map (\<lambda>r. Member x r) fs) @ G\<close>
-| Subsume:       \<open>subset_intersect_list e fs \<Longrightarrow> \<turnstile> (map (\<lambda>r. Member x r) (f # fs)) @ G \<Longrightarrow> \<turnstile> Member x e # (map (\<lambda>r. Member x r) (f#fs)) @ G\<close>
-| Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<turnstile> Member x e # G  \<Longrightarrow>  \<turnstile> (map (\<lambda>r. Member x r) (f#fs)) @ G\<close>
-(*| Fwd_PropConc:  \<open>lang e = lang (Times e1 e2) \<Longrightarrow> \<turnstile> Member x e # EqAtom x y # Member m e1 # Member n e2 # G \<Longrightarrow> \<turnstile> EqAtom x y # Member x e1 # Member x e2 # G \<close>
-| Fwd_ElimConc:  \<open>lang e = lang (Times e1 e2) \<and> is_singleton (lang e) \<Longrightarrow> is_singleton (lang e) \<Longrightarrow> \<turnstile> Member x e # Member m e1 # Member n e2 # G \<Longrightarrow>  \<turnstile> EqConc x m n # Member x e1 # Member x e2 # G\<close>
-| Bwd_Prop:      \<open>lang e = lang (Times e1 e2) \<Longrightarrow> \<turnstile> Member x e # EqAtom x y # Member m e1 # Member n e2 # G \<Longrightarrow> \<turnstile> EqAtom x y # Member x e # G \<close>
+abbreviation msins ("_, _" [56,56] 56) where "x,M == insert x M"
+
+inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turnstile> _\<close> 0) where
+  AlphaCon:      \<open>\<turnstile> A,B,\<Gamma> \<Longrightarrow> \<turnstile> Con A B,\<Gamma>\<close>
+| AlphaNegOr:    \<open>\<turnstile> Neg A, Neg B, \<Gamma> \<Longrightarrow> \<turnstile> Neg (Dis A B), \<Gamma>\<close>
+| AlphaOr:       \<open>\<turnstile> A , \<Gamma> \<Longrightarrow> \<turnstile> B , \<Gamma> \<Longrightarrow> \<turnstile> Dis A B , \<Gamma>\<close>
+| AlphaNegAnd:   \<open>\<turnstile> Neg A , \<Gamma> \<Longrightarrow> \<turnstile> Neg B , \<Gamma> \<Longrightarrow> \<turnstile> Neg (Con A B) , \<Gamma>\<close>
+| AlphaNegNeg:   \<open>\<turnstile> A , \<Gamma> \<Longrightarrow> \<turnstile> Neg (Neg A) , \<Gamma>\<close>
+| NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> (Member x ec) , \<Gamma> \<Longrightarrow> \<turnstile> (Nmember x e) , \<Gamma>\<close>
+| NotEq:         \<open>\<turnstile>EqAtom x y , (EqAtom y (Fun f fs) , \<Gamma>) \<Longrightarrow> \<turnstile> EqAtom x (Fun f fs), \<Gamma>\<close>
+| Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> Member x e , \<Gamma> \<Longrightarrow> \<turnstile> Member x ec , \<Gamma> \<Longrightarrow>  \<turnstile> \<Gamma>\<close>
+| EqProp:        \<open>\<turnstile> Member x e , EqAtom x y , Member y e , \<Gamma> \<Longrightarrow> \<turnstile> Member x e , EqAtom x y , \<Gamma>\<close>
+| NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<turnstile> Member x e1 , Member y e2 , \<Gamma> \<Longrightarrow> \<turnstile> Member x e1 , NeqAtom x y , Member y e2 , \<Gamma>\<close>
+| EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<turnstile> Member (Var x) e , Member (Var y) e , \<Gamma> \<Longrightarrow> \<turnstile> Member (Var x) e , (EqAtom (Var x) (Var y)) , \<Gamma>\<close>
+| NeqPropElim:   \<open>is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow> \<turnstile> (Member (Var x) e) , (Member (Var y) ec) , \<Gamma> \<Longrightarrow>  \<turnstile> (Member (Var x) e) , (NeqAtom (Var x) (Var y)) , \<Gamma>\<close>
+| Close:         \<open>empty_intersection_set fs \<Longrightarrow>  \<turnstile> ((\<lambda>r. Member (Var x) r) ` set fs) \<union> \<Gamma>\<close>
+| Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<turnstile> ((\<lambda>r. Member x r) ` (insert e fs)) \<union> \<Gamma> \<Longrightarrow> \<turnstile> Member x e , ((\<lambda>r. Member x r) ` (insert e fs)) \<union> \<Gamma>\<close>
+| Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<turnstile> Member (Var x) e , \<Gamma>  \<Longrightarrow>  \<turnstile> ((\<lambda>r. Member (Var x) r) ` (set fs)) \<union> \<Gamma>\<close>
+| Fwd_PropConc:  \<open>\<turnstile> Member (Var x) e, (EqAtom (Var x) (Fun f xs), \<Gamma>)\<close>
+(*| Fwd_ElimConc:  \<open>lang e = lang (Times e1 e2) \<and> is_singleton (lang e) \<Longrightarrow> is_singleton (lang e) \<Longrightarrow> \<turnstile> Member x e , Member m e1 , Member n e2 , \<Gamma> \<Longrightarrow>  \<turnstile> EqAtom x m n , Member x e1 , Member x e2 , \<Gamma>\<close>
+| Bwd_Prop:      \<open>lang e = lang (Times e1 e2) \<Longrightarrow> \<turnstile> Member x e , EqAtom x y , Member m e1 , Member n e2 , \<Gamma> \<Longrightarrow> \<turnstile> EqAtom x y , Member x e , \<Gamma> \<close>
 *)
-lemma \<open>\<turnstile> (map (\<lambda>r. Member x r) [Atom (1::nat), Atom 2]) @ G\<close>
-  apply(rule Close)
+
+
+lemma \<open>\<turnstile> ((\<lambda>r. Member (Var x) r) ` set [Atom (1::nat), Atom 2]) \<union> \<Gamma>\<close>
+  apply (rule Close)
   apply auto
   done
 
-
 subsection \<open>Soundness\<close>
 
-lemma SC_soundness: \<open>\<turnstile> G \<Longrightarrow> \<exists>p \<in> set G. eval e f p\<close>
-  apply (induct G rule: One_SC.induct)
-  subgoal for A B G 
-    apply auto 
-    done 
-  subgoal for A B G 
-    apply auto 
-    done
-  subgoal for A G B
-    apply auto
-    done
-  subgoal for A B G
-    apply auto
-    done
-  subgoal for A G 
-    apply auto
-    done
-  subgoal for ea ec x G
-    apply auto 
-    done
-  subgoal for ea ec x G
-    apply auto
-    done 
-  subgoal for x ea y G
-    apply auto
-    sorry
-  subgoal for e1 e2 x y G
-    apply auto
-    done
-  subgoal for ea x Eq y G
-    apply auto 
-    sorry
-  subgoal for ea ec x y G Neq
-    apply auto
-    sorry
-  subgoal for fs x G
-    apply auto
-    sorry
-  subgoal for ea fs x fa G
-    apply auto
-    done
-  subgoal for ea fs x G fa
-    apply auto
-    sorry
-  done
+lemma SC_soundness: \<open>\<turnstile> \<Gamma> \<Longrightarrow>\<forall>p \<in> \<Gamma>. eval e f p\<close>
+proof (induct \<Gamma> rule: One_SC.induct)
+  case (AlphaCon A B \<Gamma>)
+  then show ?case apply simp done
+next
+  case (AlphaNegOr A B \<Gamma>)
+  then show ?case apply auto done
+next
+  case (AlphaOr A \<Gamma> B)
+  then show ?case by auto
+next
+  case (AlphaNegAnd A \<Gamma> B)
+  then show ?case by auto
+next
+  case (AlphaNegNeg A \<Gamma>)
+  then show ?case by auto
+next
+  case (NotMember e ec x \<Gamma>)
+  then show ?case apply auto done
+next
+  case (NotEq x y fs \<Gamma>)
+  then show ?case apply auto done
+next
+  case (Cut e ec x \<Gamma>)
+  then show ?case apply auto done
+next
+  case (EqProp x e y \<Gamma>)
+  then show ?case apply auto done
+next
+  case (NeqSubsume e1 e2 x y \<Gamma>)
+  then show ?case apply auto done
+next
+  case (EqPropElim e x y \<Gamma>)
+  then show ?case apply auto 
+    by (metis is_singletonE list.inject singletonD) 
+next
+  case (NeqPropElim e ec x y \<Gamma> )
+  then show ?case apply auto done
+next
+  case (Close fs x \<Gamma>)
+  then show ?case apply simp sorry
+next
+  case (Subsume e fs x \<Gamma>)
+  then show ?case apply auto done
+next
+  case (Intersect e fs x \<Gamma>)
+  then show ?case apply auto 
+    by blast
+qed
+ 
 
+
+lemma cancel_comp1 : "(l\<^sup>c)\<^sup>c = l" 
+  by(cases l) auto
+
+lemma cancel_compl2: 
+  assumes asm: "l1\<^sup>c = l2\<^sup>c"
+  shows "l1 = l2"
+proof -
+  from asm have "(l1\<^sup>c)\<^sup>c = (l2\<^sup>c)\<^sup>c"
+    by auto
+  then have "l1 = (l2\<^sup>c)\<^sup>c" using cancel_comp1[of l1] by auto
+  then show ?thesis using cancel_comp1[of l2] by auto
+qed
+
+lemma comp_exi1: "\<exists>l'. l' = l\<^sup>c"
+  by(cases l) auto
+
+lemma comp_exi2: "\<exists>l. l' = l\<^sup>c"
+proof 
+  show "l' = (l'\<^sup>c)\<^sup>c" using cancel_comp1[of l'] by auto
+qed
+
+lemma comp_swap: "l1\<^sup>c = l2 \<longleftrightarrow> l1 = l2\<^sup>c "
+proof -
+  have "l1\<^sup>c = l2 \<Longrightarrow> l1 = l2\<^sup>c"  using cancel_comp1[of l1] by auto 
+  moreover 
+  have "l1 = l2\<^sup>c \<Longrightarrow> l1\<^sup>c = l2" using cancel_comp1 by auto 
+  ultimately 
+  show ?thesis by auto
+qed
 
 subsection \<open>Completeness\<close>
 
