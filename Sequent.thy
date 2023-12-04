@@ -104,6 +104,8 @@ lemma "is_singleton (lang (Plus (Atom 1) (Times (Atom 2) (Atom (3::nat)))))"
 apply (simp add:is_singleton_def) apply(simp add:c_prod_def plus_set_def times_list_def) sorry
 
 value "(\<lambda>x. x + 1) ` {1,2,3,4,5,6::nat}"
+
+value "fst (1, (2::nat))"
 lemma "1 \<in> range (\<lambda>x. x + (1::nat))"
   apply auto
   done
@@ -181,7 +183,7 @@ next
   then show ?case apply auto done
 next
   case (Close fs x \<Gamma>)
-  then show ?case apply simp sorry
+  then show ?case apply simp nitpick sorry
 next
   case (Subsume e fs x \<Gamma>)
   then show ?case apply auto done
