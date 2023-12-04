@@ -19,7 +19,7 @@ type_synonym 'u var_denot = \<open>var_sym \<Rightarrow> 'u\<close>
 type_synonym 'u fun_denot = \<open>fun_sym \<Rightarrow> 'u list \<Rightarrow> 'u\<close>
 type_synonym 'u pred_denot = \<open>pred_sym \<Rightarrow> 'u list \<Rightarrow> bool\<close>
 
-datatype fterm = Var var_sym | Fun fun_sym \<open>fterm list\<close>
+datatype fterm = Var var_sym | Fun fun_sym \<open>var_sym list\<close>
 
 datatype 't literal = 
   is_pos : Pos (get_pred: pred_sym) (get_terms: "'t list")
@@ -40,7 +40,7 @@ fun enat ::"nat var_denot" where
 
 fun evalt ::"'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> fterm \<Rightarrow> 'u" where 
   "evalt E F (Var x) = E x"
-| "evalt E F (Fun f ts) = F f (map (evalt E F) ts)"
+| "evalt E F (Fun f ts) = (F f (map E ts))"
 
 abbreviation evalts :: "'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> fterm list \<Rightarrow> 'u list" where 
 "evalts E F ts \<equiv> map (evalt E F) ts"
@@ -82,6 +82,33 @@ fun subset_intersect_set :: "'u rexp \<Rightarrow> 'u rexp set \<Rightarrow> boo
 fun eq_len_intersect :: "'u rexp \<Rightarrow> 'u rexp list \<Rightarrow> bool" where 
   "eq_len_intersect r fs = (\<Inter>(lang ` set fs) = lang r \<and> length fs > 1)"
 
+
+fun member_var_rexp :: "string list\<Rightarrow> 'u rexp list \<Rightarrow> 'u form set" where 
+"member_var_rexp [] b = {}"|
+"member_var_rexp (v # va) [] = {}"|
+"member_var_rexp (x#xs) (y#ys) = (if (length xs = length ys) then insert (Member (Var x) (y)) (member_var_rexp xs (ys)) else {})"
+
+fun con_fwd_prop ::"string \<Rightarrow> 'u rexp \<Rightarrow> 'u rexp list \<Rightarrow> bool" where
+"con_fwd_prop f r es = (if f = ''concat'' then lang (r) = List.foldl (*) (lang (hd es)) (map lang (tl es)) else False)"
+
+fun con_fwd_prop_elim ::"string \<Rightarrow> 'u rexp \<Rightarrow> 'u rexp list \<Rightarrow> bool" where
+"con_fwd_prop_elim f r es = (if f = ''concat'' then lang (r) = List.foldl (*) (lang (hd es)) (map lang (tl es)) \<and> is_singleton (lang r) else False)"
+
+
+value "List.foldl (*) (lang (Atom 1)) (map lang [Atom (2::nat), Atom 3])"
+
+lemma "is_singleton (lang (Times (Atom 1) (Times (Atom 2) (Atom (3::nat)))))"
+apply (simp add:is_singleton_def) apply(simp add:c_prod_def) done
+
+lemma "is_singleton (lang (Plus (Atom 1) (Times (Atom 2) (Atom (3::nat)))))"
+apply (simp add:is_singleton_def) apply(simp add:c_prod_def plus_set_def times_list_def) sorry
+
+value "(\<lambda>x. x + 1) ` {1,2,3,4,5,6::nat}"
+lemma "1 \<in> range (\<lambda>x. x + (1::nat))"
+  apply auto
+  done
+
+
 abbreviation msins ("_, _" [56,56] 56) where "x,M == insert x M"
 
 inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turnstile> _\<close> 0) where
@@ -91,7 +118,7 @@ inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turn
 | AlphaNegAnd:   \<open>\<turnstile> Neg A , \<Gamma> \<Longrightarrow> \<turnstile> Neg B , \<Gamma> \<Longrightarrow> \<turnstile> Neg (Con A B) , \<Gamma>\<close>
 | AlphaNegNeg:   \<open>\<turnstile> A , \<Gamma> \<Longrightarrow> \<turnstile> Neg (Neg A) , \<Gamma>\<close>
 | NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> (Member x ec) , \<Gamma> \<Longrightarrow> \<turnstile> (Nmember x e) , \<Gamma>\<close>
-| NotEq:         \<open>\<turnstile>EqAtom x y , (EqAtom y (Fun f fs) , \<Gamma>) \<Longrightarrow> \<turnstile> EqAtom x (Fun f fs), \<Gamma>\<close>
+| NotEq:         \<open>\<turnstile> EqAtom x y , (EqAtom y (Fun f fs) , \<Gamma>) \<Longrightarrow> \<turnstile> EqAtom x (Fun f fs), \<Gamma>\<close>
 | Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> Member x e , \<Gamma> \<Longrightarrow> \<turnstile> Member x ec , \<Gamma> \<Longrightarrow>  \<turnstile> \<Gamma>\<close>
 | EqProp:        \<open>\<turnstile> Member x e , EqAtom x y , Member y e , \<Gamma> \<Longrightarrow> \<turnstile> Member x e , EqAtom x y , \<Gamma>\<close>
 | NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<turnstile> Member x e1 , Member y e2 , \<Gamma> \<Longrightarrow> \<turnstile> Member x e1 , NeqAtom x y , Member y e2 , \<Gamma>\<close>
@@ -100,9 +127,9 @@ inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turn
 | Close:         \<open>empty_intersection_set fs \<Longrightarrow>  \<turnstile> ((\<lambda>r. Member (Var x) r) ` set fs) \<union> \<Gamma>\<close>
 | Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<turnstile> ((\<lambda>r. Member x r) ` (insert e fs)) \<union> \<Gamma> \<Longrightarrow> \<turnstile> Member x e , ((\<lambda>r. Member x r) ` (insert e fs)) \<union> \<Gamma>\<close>
 | Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<turnstile> Member (Var x) e , \<Gamma>  \<Longrightarrow>  \<turnstile> ((\<lambda>r. Member (Var x) r) ` (set fs)) \<union> \<Gamma>\<close>
-| Fwd_PropConc:  \<open>\<turnstile> Member (Var x) e, (EqAtom (Var x) (Fun f xs), \<Gamma>)\<close>
-(*| Fwd_ElimConc:  \<open>lang e = lang (Times e1 e2) \<and> is_singleton (lang e) \<Longrightarrow> is_singleton (lang e) \<Longrightarrow> \<turnstile> Member x e , Member m e1 , Member n e2 , \<Gamma> \<Longrightarrow>  \<turnstile> EqAtom x m n , Member x e1 , Member x e2 , \<Gamma>\<close>
-| Bwd_Prop:      \<open>lang e = lang (Times e1 e2) \<Longrightarrow> \<turnstile> Member x e , EqAtom x y , Member m e1 , Member n e2 , \<Gamma> \<Longrightarrow> \<turnstile> EqAtom x y , Member x e , \<Gamma> \<close>
+| Fwd_PropConc:  \<open>con_fwd_prop f e es \<Longrightarrow> \<turnstile> (Member (Var x) e, (EqAtom (Var x) (Fun f xs), member_var_rexp xs es)) \<union> \<Gamma> \<Longrightarrow> \<turnstile> EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma>\<close>
+| Fwd_ElimConc:  \<open>con_fwd_prop_elim f e es \<Longrightarrow> \<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma> \<Longrightarrow>  \<turnstile> (EqAtom (Var x) (Fun f xs), member_var_rexp xs es) \<union> \<Gamma>\<close>
+(*| Bwd_Prop:      \<open>lang e = lang (Times e1 e2) \<Longrightarrow> \<turnstile> Member x e , EqAtom x y , Member m e1 , Member n e2 , \<Gamma> \<Longrightarrow> \<turnstile> EqAtom x y , Member x e , \<Gamma> \<close>
 *)
 
 
@@ -111,6 +138,7 @@ lemma \<open>\<turnstile> ((\<lambda>r. Member (Var x) r) ` set [Atom (1::nat), 
   apply auto
   done
 
+value "(\<lambda>x. x + 1) ` {1,2,3,4,5,6::nat}"
 subsection \<open>Soundness\<close>
 
 lemma SC_soundness: \<open>\<turnstile> \<Gamma> \<Longrightarrow>\<forall>p \<in> \<Gamma>. eval e f p\<close>
@@ -161,6 +189,12 @@ next
   case (Intersect e fs x \<Gamma>)
   then show ?case apply auto 
     by blast
+next 
+  case (Fwd_PropConc fa ea es x xs \<Gamma>)
+  then show ?case apply auto done
+next 
+  case (Fwd_ElimConc fa ea es x xs \<Gamma>)
+  then show ?case apply auto done
 qed
  
 
