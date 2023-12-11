@@ -58,6 +58,7 @@ datatype 'u form =
   | Dis "'u form" "'u form"                     
   | Con "'u form" "'u form"                      
   | Neg "'u form"     
+  | FF
 
 
 primrec eval :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> 'u form \<Rightarrow> bool\<close> where
@@ -68,6 +69,7 @@ primrec eval :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> 'u 
 | "eval e f (Dis m n) = (eval e f m \<or> eval e f n)"
 | "eval e f (Con m n) = (eval e f m \<and> eval e f n)"
 | "eval e f (Neg m) = (\<not> eval e f m)"
+| "eval e f FF = False"
 
 
 definition model :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow>  'u form list \<Rightarrow> 'u form \<Rightarrow> bool\<close> ("_,_,_ \<Turnstile> _" [50,50] 50) where
@@ -105,7 +107,6 @@ apply (simp add:is_singleton_def) apply(simp add:c_prod_def plus_set_def times_l
 
 value "(\<lambda>x. x + 1) ` {1,2,3,4,5,6::nat}"
 
-value "fst (1, (2::nat))"
 lemma "1 \<in> range (\<lambda>x. x + (1::nat))"
   apply auto
   done
@@ -118,7 +119,7 @@ inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turn
 | AlphaNegOr:    \<open>\<turnstile> Neg A, Neg B, \<Gamma> \<Longrightarrow> \<turnstile> Neg (Dis A B), \<Gamma>\<close>
 | AlphaOr:       \<open>\<turnstile> A , \<Gamma> \<Longrightarrow> \<turnstile> B , \<Gamma> \<Longrightarrow> \<turnstile> Dis A B , \<Gamma>\<close>
 | AlphaNegAnd:   \<open>\<turnstile> Neg A , \<Gamma> \<Longrightarrow> \<turnstile> Neg B , \<Gamma> \<Longrightarrow> \<turnstile> Neg (Con A B) , \<Gamma>\<close>
-| AlphaNegNeg:   \<open>\<turnstile> A , \<Gamma> \<Longrightarrow> \<turnstile> Neg (Neg A) , \<Gamma>\<close>
+| AlphaNegNeg:   \<open>\<turnstile> A, \<Gamma> \<Longrightarrow> \<turnstile> Neg (Neg A) , \<Gamma>\<close>
 | NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> (Member x ec) , \<Gamma> \<Longrightarrow> \<turnstile> (Nmember x e) , \<Gamma>\<close>
 | NotEq:         \<open>\<turnstile> EqAtom x y , (EqAtom y (Fun f fs) , \<Gamma>) \<Longrightarrow> \<turnstile> EqAtom x (Fun f fs), \<Gamma>\<close>
 | Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> Member x e , \<Gamma> \<Longrightarrow> \<turnstile> Member x ec , \<Gamma> \<Longrightarrow>  \<turnstile> \<Gamma>\<close>
@@ -126,21 +127,14 @@ inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turn
 | NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<turnstile> Member x e1 , Member y e2 , \<Gamma> \<Longrightarrow> \<turnstile> Member x e1 , NeqAtom x y , Member y e2 , \<Gamma>\<close>
 | EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<turnstile> Member (Var x) e , Member (Var y) e , \<Gamma> \<Longrightarrow> \<turnstile> Member (Var x) e , (EqAtom (Var x) (Var y)) , \<Gamma>\<close>
 | NeqPropElim:   \<open>is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow> \<turnstile> (Member (Var x) e) , (Member (Var y) ec) , \<Gamma> \<Longrightarrow>  \<turnstile> (Member (Var x) e) , (NeqAtom (Var x) (Var y)) , \<Gamma>\<close>
-| Close:         \<open>empty_intersection_set fs \<Longrightarrow>  \<turnstile> ((\<lambda>r. Member (Var x) r) ` set fs) \<union> \<Gamma>\<close>
-| Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<turnstile> ((\<lambda>r. Member x r) ` (insert e fs)) \<union> \<Gamma> \<Longrightarrow> \<turnstile> Member x e , ((\<lambda>r. Member x r) ` (insert e fs)) \<union> \<Gamma>\<close>
+| Close:         \<open>empty_intersection_set fs \<Longrightarrow> \<turnstile> {FF} \<Longrightarrow> \<turnstile> ((\<lambda>r. Member (Var x) r) ` set fs) \<union> \<Gamma>\<close>
+| Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<turnstile> ((\<lambda>r. Member x r) ` fs) \<union> \<Gamma> \<Longrightarrow> \<turnstile> Member x e , ((\<lambda>r. Member x r) ` fs) \<union> \<Gamma>\<close>
 | Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<turnstile> Member (Var x) e , \<Gamma>  \<Longrightarrow>  \<turnstile> ((\<lambda>r. Member (Var x) r) ` (set fs)) \<union> \<Gamma>\<close>
 | Fwd_PropConc:  \<open>con_fwd_prop f e es \<Longrightarrow> \<turnstile> (Member (Var x) e, (EqAtom (Var x) (Fun f xs), member_var_rexp xs es)) \<union> \<Gamma> \<Longrightarrow> \<turnstile> EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma>\<close>
 | Fwd_ElimConc:  \<open>con_fwd_prop_elim f e es \<Longrightarrow> \<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma> \<Longrightarrow>  \<turnstile> (EqAtom (Var x) (Fun f xs), member_var_rexp xs es) \<union> \<Gamma>\<close>
 (*| Bwd_Prop:      \<open>lang e = lang (Times e1 e2) \<Longrightarrow> \<turnstile> Member x e , EqAtom x y , Member m e1 , Member n e2 , \<Gamma> \<Longrightarrow> \<turnstile> EqAtom x y , Member x e , \<Gamma> \<close>
 *)
 
-
-lemma \<open>\<turnstile> ((\<lambda>r. Member (Var x) r) ` set [Atom (1::nat), Atom 2]) \<union> \<Gamma>\<close>
-  apply (rule Close)
-  apply auto
-  done
-
-value "(\<lambda>x. x + 1) ` {1,2,3,4,5,6::nat}"
 subsection \<open>Soundness\<close>
 
 lemma SC_soundness: \<open>\<turnstile> \<Gamma> \<Longrightarrow>\<forall>p \<in> \<Gamma>. eval e f p\<close>
@@ -183,10 +177,11 @@ next
   then show ?case apply auto done
 next
   case (Close fs x \<Gamma>)
-  then show ?case apply simp nitpick sorry
+  then show ?case apply simp  done
 next
   case (Subsume e fs x \<Gamma>)
-  then show ?case apply auto done
+  then show ?case apply auto 
+    by (smt (verit) INT_I Un_iff eval.simps(3) image_iff subsetD) 
 next
   case (Intersect e fs x \<Gamma>)
   then show ?case apply auto 
