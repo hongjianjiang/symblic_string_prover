@@ -75,7 +75,18 @@ primrec eval :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> 'u 
 definition model :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow>  'u form list \<Rightarrow> 'u form \<Rightarrow> bool\<close> ("_,_,_ \<Turnstile> _" [50,50] 50) where
   \<open>(e,f,ps \<Turnstile> p) = (list_all (eval e f) ps \<longrightarrow> eval e f p)\<close>
 
-fun empty_intersection_set :: "'u rexp list \<Rightarrow> bool" where 
+fun pre_image_conc ::"'u rexp \<Rightarrow> ('u rexp * 'u rexp) set" where 
+"pre_image_conc r = {(a,b)| a b. lang r = (lang (Times a b))}"
+
+lemma "lang (Times (One) (Atom (1::nat))) = lang (Atom 1)"
+  apply auto
+  done
+
+lemma "((Star (Atom 1)), One) \<in> pre_image_conc (Star (Atom (1::nat)))"
+  apply auto 
+  done
+
+fun empty_intersection_set :: "'u rexp list \<Rightarrow> bool" where
   "empty_intersection_set fs = (\<Inter>(lang ` set fs) = {} \<and> length fs > 1 )"
 
 fun subset_intersect_set :: "'u rexp \<Rightarrow> 'u rexp set \<Rightarrow> bool" where 
@@ -96,20 +107,14 @@ fun con_fwd_prop ::"string \<Rightarrow> 'u rexp \<Rightarrow> 'u rexp list \<Ri
 fun con_fwd_prop_elim ::"string \<Rightarrow> 'u rexp \<Rightarrow> 'u rexp list \<Rightarrow> bool" where
 "con_fwd_prop_elim f r es = (if f = ''concat'' then lang (r) = List.foldl (*) (lang (hd es)) (map lang (tl es)) \<and> is_singleton (lang r) else False)"
 
+fun con_bwd_prop ::"string \<Rightarrow> 'u rexp \<Rightarrow> ('u rexp * 'u rexp) set" where
+"con_bwd_prop f r = (if f = ''concat'' then pre_image_conc r else {})"
+
 
 value "List.foldl (*) (lang (Atom 1)) (map lang [Atom (2::nat), Atom 3])"
 
 lemma "is_singleton (lang (Times (Atom 1) (Times (Atom 2) (Atom (3::nat)))))"
 apply (simp add:is_singleton_def) apply(simp add:c_prod_def) done
-
-lemma "is_singleton (lang (Plus (Atom 1) (Times (Atom 2) (Atom (3::nat)))))"
-apply (simp add:is_singleton_def) apply(simp add:c_prod_def plus_set_def times_list_def) sorry
-
-value "(\<lambda>x. x + 1) ` {1,2,3,4,5,6::nat}"
-
-lemma "1 \<in> range (\<lambda>x. x + (1::nat))"
-  apply auto
-  done
 
 
 abbreviation msins ("_, _" [56,56] 56) where "x,M == insert x M"
@@ -132,8 +137,8 @@ inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turn
 | Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<turnstile> Member (Var x) e , \<Gamma>  \<Longrightarrow>  \<turnstile> ((\<lambda>r. Member (Var x) r) ` (set fs)) \<union> \<Gamma>\<close>
 | Fwd_PropConc:  \<open>con_fwd_prop f e es \<Longrightarrow> \<turnstile> (Member (Var x) e, (EqAtom (Var x) (Fun f xs), member_var_rexp xs es)) \<union> \<Gamma> \<Longrightarrow> \<turnstile> EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma>\<close>
 | Fwd_ElimConc:  \<open>con_fwd_prop_elim f e es \<Longrightarrow> \<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma> \<Longrightarrow>  \<turnstile> (EqAtom (Var x) (Fun f xs), member_var_rexp xs es) \<union> \<Gamma>\<close>
-(*| Bwd_Prop:      \<open>lang e = lang (Times e1 e2) \<Longrightarrow> \<turnstile> Member x e , EqAtom x y , Member m e1 , Member n e2 , \<Gamma> \<Longrightarrow> \<turnstile> EqAtom x y , Member x e , \<Gamma> \<close>
-*)
+| Bwd_PropConc:  \<open>\<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), \<Gamma> \<Longrightarrow> \<turnstile> \<Union>((\<lambda>r. Member (Var (hd xs)) (fst r), Member (Var (hd (tl xs))) (snd r), Member (Var x) e, EqAtom (Var x) (Fun f xs), \<Gamma>) ` con_bwd_prop f e)\<close>
+
 
 subsection \<open>Soundness\<close>
 
@@ -192,6 +197,9 @@ next
 next 
   case (Fwd_ElimConc fa ea es x xs \<Gamma>)
   then show ?case apply auto done
+next 
+  case (Bwd_PropConc x ea fa xs \<Gamma>)
+  then show ?case  apply auto sorry
 qed
  
 
