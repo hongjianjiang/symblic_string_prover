@@ -10,8 +10,6 @@ section \<open>Terms and 'u formulae\<close>
 text \<open>
 \label{sec:terms} The datatypes of terms and 'u formulae are defined as follows:
 \<close>
-
-
 type_synonym var_sym = string
 type_synonym fun_sym = string
 type_synonym pred_sym = string
@@ -78,14 +76,6 @@ definition model :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow>
 fun pre_image_conc ::"'u rexp \<Rightarrow> ('u rexp * 'u rexp) set" where 
 "pre_image_conc r = {(a,b)| a b. lang r = (lang (Times a b))}"
 
-lemma "lang (Times (One) (Atom (1::nat))) = lang (Atom 1)"
-  apply auto
-  done
-
-lemma "((Star (Atom 1)), One) \<in> pre_image_conc (Star (Atom (1::nat)))"
-  apply auto 
-  done
-
 fun empty_intersection_set :: "'u rexp list \<Rightarrow> bool" where
   "empty_intersection_set fs = (\<Inter>(lang ` set fs) = {} \<and> length fs > 1 )"
 
@@ -138,7 +128,6 @@ inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turn
 | Fwd_PropConc:  \<open>con_fwd_prop f e es \<Longrightarrow> \<turnstile> (Member (Var x) e, (EqAtom (Var x) (Fun f xs), member_var_rexp xs es)) \<union> \<Gamma> \<Longrightarrow> \<turnstile> EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma>\<close>
 | Fwd_ElimConc:  \<open>con_fwd_prop_elim f e es \<Longrightarrow> \<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma> \<Longrightarrow>  \<turnstile> (EqAtom (Var x) (Fun f xs), member_var_rexp xs es) \<union> \<Gamma>\<close>
 | Bwd_PropConc:  \<open>\<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), \<Gamma> \<Longrightarrow> \<turnstile> \<Union>((\<lambda>r. Member (Var (hd xs)) (fst r), Member (Var (hd (tl xs))) (snd r), Member (Var x) e, EqAtom (Var x) (Fun f xs), \<Gamma>) ` con_bwd_prop f e)\<close>
-
 
 subsection \<open>Soundness\<close>
 
@@ -199,7 +188,7 @@ next
   then show ?case apply auto done
 next 
   case (Bwd_PropConc x ea fa xs \<Gamma>)
-  then show ?case  apply auto sorry
+  then show ?case  apply simp sorry
 qed
  
 
