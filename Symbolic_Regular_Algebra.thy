@@ -187,6 +187,5 @@ locale ex_boolean_algebra  =  inf + sup + bot + top + uminus +
 locale symbolic_algebra = A_algebra + ex_boolean_algebra +
   assumes inf1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x \<^bsup>& y = inf x y"
   assumes sup1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x + y = sup x y"
-  assumes ll : "pre \<in> alp"
 
 end

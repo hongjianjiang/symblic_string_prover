@@ -69,12 +69,11 @@ primrec eval :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> 'u 
 | "eval e f (Neg m) = (\<not> eval e f m)"
 | "eval e f FF = False"
 
-
 definition model :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow>  'u form list \<Rightarrow> 'u form \<Rightarrow> bool\<close> ("_,_,_ \<Turnstile> _" [50,50] 50) where
   \<open>(e,f,ps \<Turnstile> p) = (list_all (eval e f) ps \<longrightarrow> eval e f p)\<close>
 
 fun pre_image_conc ::"'u rexp \<Rightarrow> ('u rexp * 'u rexp) set" where 
-"pre_image_conc r = {(a,b)| a b. lang r = (lang (Times a b))}"
+  "pre_image_conc r = {(a,b)| a b. lang r = (lang (Times a b))}"
 
 fun empty_intersection_set :: "'u rexp list \<Rightarrow> bool" where
   "empty_intersection_set fs = (\<Inter>(lang ` set fs) = {} \<and> length fs > 1 )"
@@ -100,23 +99,17 @@ fun con_fwd_prop_elim ::"string \<Rightarrow> 'u rexp \<Rightarrow> 'u rexp list
 fun con_bwd_prop ::"string \<Rightarrow> 'u rexp \<Rightarrow> ('u rexp * 'u rexp) set" where
 "con_bwd_prop f r = (if f = ''concat'' then pre_image_conc r else {})"
 
-value "List.foldl (*) (lang (Atom 1)) (map lang [Atom (2::nat), Atom 3])"
-
-lemma "is_singleton (lang (Times (Atom 1) (Times (Atom 2) (Atom (3::nat)))))"
-apply (simp add:is_singleton_def) apply(simp add:c_prod_def) done
-
-
 abbreviation msins ("_, _" [56,56] 56) where "x,M == insert x M"
 
 inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turnstile> _\<close> 0) where
   AlphaCon:      \<open>\<turnstile> A,B,\<Gamma> \<Longrightarrow> \<turnstile> Con A B,\<Gamma>\<close>
 | AlphaNegOr:    \<open>\<turnstile> Neg A, Neg B, \<Gamma> \<Longrightarrow> \<turnstile> Neg (Dis A B), \<Gamma>\<close>
-| AlphaOr:       \<open>\<turnstile> A , \<Gamma> \<Longrightarrow> \<turnstile> B , \<Gamma> \<Longrightarrow> \<turnstile> Dis A B , \<Gamma>\<close>
-| AlphaNegAnd:   \<open>\<turnstile> Neg A , \<Gamma> \<Longrightarrow> \<turnstile> Neg B , \<Gamma> \<Longrightarrow> \<turnstile> Neg (Con A B) , \<Gamma>\<close>
+| AlphaOr:       \<open>(\<turnstile> A , \<Gamma>) \<or> (\<turnstile> B , \<Gamma>) \<Longrightarrow> \<turnstile> Dis A B , \<Gamma>\<close>
+| AlphaNegAnd:   \<open>(\<turnstile> Neg A , \<Gamma>) \<or> (\<turnstile> Neg B , \<Gamma>) \<Longrightarrow> \<turnstile> Neg (Con A B) , \<Gamma>\<close>
 | AlphaNegNeg:   \<open>\<turnstile> A, \<Gamma> \<Longrightarrow> \<turnstile> Neg (Neg A) , \<Gamma>\<close>
 | NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> (Member x ec) , \<Gamma> \<Longrightarrow> \<turnstile> (Nmember x e) , \<Gamma>\<close>
 | NotEq:         \<open>\<turnstile> EqAtom x y , (EqAtom y (Fun f fs) , \<Gamma>) \<Longrightarrow> \<turnstile> EqAtom x (Fun f fs), \<Gamma>\<close>
-| Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> Member x e , \<Gamma> \<Longrightarrow> \<turnstile> Member x ec , \<Gamma> \<Longrightarrow>  \<turnstile> \<Gamma>\<close>
+| Cut:           \<open>regexp_compl e ec \<Longrightarrow> (\<turnstile> Member x e , \<Gamma>) \<or> (\<turnstile> Member x ec , \<Gamma>) \<Longrightarrow>  \<turnstile> \<Gamma>\<close>
 | EqProp:        \<open>\<turnstile> Member x e , EqAtom x y , Member y e , \<Gamma> \<Longrightarrow> \<turnstile> Member x e , EqAtom x y , \<Gamma>\<close>
 | NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<turnstile> Member x e1 , Member y e2 , \<Gamma> \<Longrightarrow> \<turnstile> Member x e1 , NeqAtom x y , Member y e2 , \<Gamma>\<close>
 | EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<turnstile> Member (Var x) e , Member (Var y) e , \<Gamma> \<Longrightarrow> \<turnstile> Member (Var x) e , (EqAtom (Var x) (Var y)) , \<Gamma>\<close>
@@ -126,7 +119,9 @@ inductive One_SC :: \<open>'u form set \<Rightarrow> bool\<close> (\<open>\<turn
 | Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<turnstile> Member (Var x) e , \<Gamma>  \<Longrightarrow>  \<turnstile> ((\<lambda>r. Member (Var x) r) ` (set fs)) \<union> \<Gamma>\<close>
 | Fwd_PropConc:  \<open>con_fwd_prop f e es \<Longrightarrow> \<turnstile> (Member (Var x) e, (EqAtom (Var x) (Fun f xs), member_var_rexp xs es)) \<union> \<Gamma> \<Longrightarrow> \<turnstile> EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma>\<close>
 | Fwd_ElimConc:  \<open>con_fwd_prop_elim f e es \<Longrightarrow> \<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma> \<Longrightarrow>  \<turnstile> (EqAtom (Var x) (Fun f xs), member_var_rexp xs es) \<union> \<Gamma>\<close>
-| Bwd_PropConc:  \<open>\<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), \<Gamma> \<Longrightarrow> \<turnstile> \<Union>((\<lambda>r. Member (Var (hd xs)) (fst r), Member (Var (hd (tl xs))) (snd r), Member (Var x) e, EqAtom (Var x) (Fun f xs), \<Gamma>) ` con_bwd_prop f e)\<close>
+| Bwd_PropConc:  \<open>con_bwd_prop f e = es \<Longrightarrow> 
+\<turnstile> \<Union>((\<lambda>r. Member (Var (hd xs)) (fst r), Member (Var (hd (tl xs))) (snd r), Member (Var x) e, EqAtom (Var x) (Fun f xs), \<Gamma>) ` es) \<Longrightarrow> 
+\<turnstile> Member (Var x) e , EqAtom (Var x) (Fun f xs), \<Gamma>\<close>
 
 subsection \<open>Soundness\<close>
 
@@ -190,37 +185,6 @@ next
   then show ?case  apply auto  sorry
 qed
  
-
-
-lemma cancel_comp1 : "(l\<^sup>c)\<^sup>c = l" 
-  by(cases l) auto
-
-lemma cancel_compl2: 
-  assumes asm: "l1\<^sup>c = l2\<^sup>c"
-  shows "l1 = l2"
-proof -
-  from asm have "(l1\<^sup>c)\<^sup>c = (l2\<^sup>c)\<^sup>c"
-    by auto
-  then have "l1 = (l2\<^sup>c)\<^sup>c" using cancel_comp1[of l1] by auto
-  then show ?thesis using cancel_comp1[of l2] by auto
-qed
-
-lemma comp_exi1: "\<exists>l'. l' = l\<^sup>c"
-  by(cases l) auto
-
-lemma comp_exi2: "\<exists>l. l' = l\<^sup>c"
-proof 
-  show "l' = (l'\<^sup>c)\<^sup>c" using cancel_comp1[of l'] by auto
-qed
-
-lemma comp_swap: "l1\<^sup>c = l2 \<longleftrightarrow> l1 = l2\<^sup>c "
-proof -
-  have "l1\<^sup>c = l2 \<Longrightarrow> l1 = l2\<^sup>c"  using cancel_comp1[of l1] by auto 
-  moreover 
-  have "l1 = l2\<^sup>c \<Longrightarrow> l1\<^sup>c = l2" using cancel_comp1 by auto 
-  ultimately 
-  show ?thesis by auto
-qed
 
 subsection \<open>Completeness\<close>
 
