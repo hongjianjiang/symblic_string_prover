@@ -175,17 +175,18 @@ sublocale A_algebra \<subseteq> K2_algebra ..
 
 subsection \<open>Symbolic Regular Algebra's Axioms\<close>
 
-notation
-  bot ("\<bottom>") and
-  top ("\<top>") and
-  inf  (infixl "\<sqinter>" 70) and
-  sup  (infixl "\<squnion>" 65)
+locale ex_boolean_algebra  =  inf + sup + bot + top + uminus +
+  fixes pre :: "'a"
+  fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
+  assumes a1 : "denote bot c = False"
+  assumes a2 : "denote top c = True"
+  assumes a3 : "denote (uminus pre) c =  (\<not> denote pre c)"
+  assumes a4 : "denote (inf f1 f2) c =  (denote f1 c \<and> denote f2 c)"
+  assumes a5 : "denote (sup f1 f2) c =  (denote f1 c \<or> denote f2 c)"
 
-(*class symbolic_algebra = A_algebra + boolean_algebra +
-  fixes pres :: "('a Predicate.pred) set"
-  fixes val :: "('a Predicate.pred) \<Rightarrow> 'a set"
-  assumes ii : "\<lbrakk>p \<in> pres\<rbrakk> \<Longrightarrow> val p \<subseteq> \<bbbP>" 
-  assumes inf1 : "\<lbrakk>p1 \<in> pres; p2 \<in> pres\<rbrakk> \<Longrightarrow> x \<^bsup>& y = x \<sqinter> y"
-  assumes sup1 : "\<lbrakk>p1 \<in> pres; p2 \<in> pres\<rbrakk> \<Longrightarrow> x + y = x \<squnion> y"
-*)
+locale symbolic_algebra = A_algebra + ex_boolean_algebra +
+  assumes inf1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x \<^bsup>& y = inf x y"
+  assumes sup1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x + y = sup x y"
+  assumes ll : "pre \<in> alp"
+
 end

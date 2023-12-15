@@ -100,7 +100,6 @@ fun con_fwd_prop_elim ::"string \<Rightarrow> 'u rexp \<Rightarrow> 'u rexp list
 fun con_bwd_prop ::"string \<Rightarrow> 'u rexp \<Rightarrow> ('u rexp * 'u rexp) set" where
 "con_bwd_prop f r = (if f = ''concat'' then pre_image_conc r else {})"
 
-
 value "List.foldl (*) (lang (Atom 1)) (map lang [Atom (2::nat), Atom 3])"
 
 lemma "is_singleton (lang (Times (Atom 1) (Times (Atom 2) (Atom (3::nat)))))"
@@ -188,7 +187,7 @@ next
   then show ?case apply auto done
 next 
   case (Bwd_PropConc x ea fa xs \<Gamma>)
-  then show ?case  apply simp sorry
+  then show ?case  apply auto  sorry
 qed
  
 
