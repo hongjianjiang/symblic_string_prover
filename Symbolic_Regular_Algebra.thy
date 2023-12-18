@@ -175,17 +175,27 @@ sublocale A_algebra \<subseteq> K2_algebra ..
 
 subsection \<open>Symbolic Regular Algebra's Axioms\<close>
 
-locale ex_boolean_algebra  =  inf + sup + bot + top + uminus +
-  fixes pre :: "'a"
-  fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
-  assumes a1 : "denote bot c = False"
-  assumes a2 : "denote top c = True"
-  assumes a3 : "denote (uminus pre) c =  (\<not> denote pre c)"
-  assumes a4 : "denote (inf f1 f2) c =  (denote f1 c \<and> denote f2 c)"
-  assumes a5 : "denote (sup f1 f2) c =  (denote f1 c \<or> denote f2 c)"
+locale abstract_boolean_algebra = conj: abel_semigroup \<open>(\<^bold>\<sqinter>)\<close> + disj: abel_semigroup \<open>(\<^bold>\<squnion>)\<close>
+  for conj :: \<open>'a \<Rightarrow> 'a \<Rightarrow> 'a\<close>  (infixr \<open>\<^bold>\<sqinter>\<close> 70)
+    and disj :: \<open>'a \<Rightarrow> 'a \<Rightarrow> 'a\<close>  (infixr \<open>\<^bold>\<squnion>\<close> 65) +
+  fixes compl :: \<open>'a \<Rightarrow> 'a\<close>  (\<open>\<^bold>- _\<close> [81] 80)
+    and bot :: \<open>'a\<close>  
+    and top  :: \<open>'a\<close> 
+    and denote :: \<open>'a \<Rightarrow> 'b \<Rightarrow> bool\<close>
+  assumes conj_disj_distrib: \<open>x \<^bold>\<sqinter> (y \<^bold>\<squnion> z) = (x \<^bold>\<sqinter> y) \<^bold>\<squnion> (x \<^bold>\<sqinter> z)\<close>
+    and disj_conj_distrib: \<open>x \<^bold>\<squnion> (y \<^bold>\<sqinter> z) = (x \<^bold>\<squnion> y) \<^bold>\<sqinter> (x \<^bold>\<squnion> z)\<close>
+    and conj_one_right: \<open>x \<^bold>\<sqinter>  top = x\<close>
+    and disj_zero_right: \<open>x \<^bold>\<squnion> bot = x\<close>
+    and conj_cancel_right [simp]: \<open>x \<^bold>\<sqinter> \<^bold>- x = bot\<close>
+    and disj_cancel_right [simp]: \<open>x \<^bold>\<squnion> \<^bold>- x = top\<close>
+    and denote_bot: \<open>denote bot c = False\<close>
+    and denote_top: \<open>denote top c = True\<close>
+    and denote_compl: \<open>denote (\<^bold>- x) c = (\<not> denote x c)\<close>
+    and denote_conj: \<open>denote (\<phi> \<^bold>\<sqinter> \<psi>) c = (denote \<phi> c \<and> denote \<psi> c)\<close>
+    and denote_disj: \<open>denote (\<phi> \<^bold>\<squnion> \<psi>) c = (denote \<psi> c \<or> denote \<psi> c)\<close>
 
-locale symbolic_algebra = A_algebra + ex_boolean_algebra +
-  assumes inf1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x \<^bsup>& y = inf x y"
-  assumes sup1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x + y = sup x y"
+locale symbolic_algebra = A_algebra + abstract_boolean_algebra +
+  assumes inf1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x \<^bsup>& y = conj x y"
+  assumes sup1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x + y = disj x y"
 
 end
