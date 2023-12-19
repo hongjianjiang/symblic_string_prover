@@ -212,6 +212,18 @@ begin
 
 end
 
+class t1 = boolean_algebra + 
+  fixes alp1 :: "'a BA"
+  fixes sig :: 'a 
+  fixes denote1 :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool"
+  assumes s1: "denote1 alp1 sig"
+  assumes denote_bot1 : "denote1 Bot c = False"
+  assumes denote_top1 : "denote1 Top c = True"
+  assumes denote_compl1 : "denote1 (Neg a) c = (\<not> denote1 a c)"
+  assumes denote_inf1 : "denote1 (Conjs a b) c = (denote1 a c \<and> denote1 b c)"
+  assumes denote_sup1 : "denote1 (Disj a b) c = (denote1 a c \<or> denote1 b c)"
+begin 
+
 fun denote_char :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
 "denote_char (Atom1 a) c = (a = c)"|
 "denote_char Top c = True"|
@@ -220,14 +232,14 @@ fun denote_char :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
 "denote_char (Disj p q) c = (denote_char p c \<or> denote_char q c)"|
 "denote_char (Neg p) c = (\<not> denote_char p c)"
 
-interpretation BA : EBA Bot Top Neg Disj Conj denote_char 
+
+sublocale EBA Bot Top Neg Disj Conj denote_char 
   apply standard 
   apply auto 
   done
+end
 
 
-locale symbolic_algebra = A_algebra  + EBA +
-  assumes inf1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x \<^bsup>& y = Conj x y"
-  assumes sup1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x + y = Disj x y"
+class symbolic_algebra = A_algebra + t1
 
 end
