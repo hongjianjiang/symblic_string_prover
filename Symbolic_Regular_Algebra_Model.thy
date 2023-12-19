@@ -662,4 +662,24 @@ theorem arden_regexp_r:
   apply transfer
   by (metis Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.lang.simps(7) Symbolic_Regular_Algebra_Model.rexp.distinct(2) alpset_def arden_r insertE neq_Nil_conv rexp_ewp_l_ewp singletonD)
 
+text \<open>Boolean Algebra Section\<close>
+
+datatype 'a BA = Atom1 'a | Top | Bot | Conj "'a BA" "'a BA" | Disj "'a BA" "'a BA" | Neg "'a BA"
+
+fun denote :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where 
+"denote (Atom1 a) c = (a = c)"|
+"denote Top c = True"|
+"denote Bot c = False"|
+"denote (Conj p q) c = (denote p c \<and> denote q c)"|
+"denote (Disj p q) c = (denote p c \<or> denote q c)"|
+"denote (Neg p) c = (\<not> denote p c)"
+
+
+fun string_to_RE :: "string \<Rightarrow> char rexp" where
+  "string_to_RE s = List.foldr (\<lambda>x y. Times x y) (List.map (\<lambda>x. Atom x) s) One"   
+
+fun string_to_characterClass :: "string \<Rightarrow> char BA" where
+  "string_to_characterClass s = List.foldr (\<lambda>x y. Disj x y) (List.map (\<lambda>x. Atom1 x) s) Bot"  
+
+
 end

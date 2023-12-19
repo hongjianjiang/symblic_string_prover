@@ -15,8 +15,8 @@ text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<
 
 class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
   fixes alp :: "'a set" ("\<bbbP>")
-  assumes S11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
-  assumes EWP : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
+  assumes A11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
+  assumes A12 : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
   assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
   assumes A15: "0 \<^bsup>& a = 0"
@@ -73,9 +73,9 @@ proof
   show "x \<odot> (y + z) = x \<odot> y + x \<odot> z"
     by (simp add: local.opp_mult_def)
   show "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
-    by (simp add: local.S11)
+    by (simp add: local.A11)
   show "(1 \<^bsup>& x \<noteq> 0) = (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
-    by (simp add: local.EWP)
+    by (simp add: local.A12)
   show "1 \<^bsup>& (x \<odot> y) = 1 \<^bsup>& x \<^bsup>& y"
     using local.A13 local.inter_assoc' local.inter_comm local.opp_mult_def by force
   show "1 \<^bsup>& x\<^sup>\<star> = 1"
@@ -114,9 +114,9 @@ next
   proof -
     assume "1 \<^bsup>& x \<noteq> 0"
     then obtain x' where assm1: "x = 1 + x'" and assm2: "1 \<^bsup>& x' = 0"
-      by (metis EWP) 
+      by (metis A12) 
     have "y = x\<^sup>\<star> \<cdot> (z + y)"
-      using \<open>\<And>thesis. (\<And>x'. \<lbrakk>x = 1 + x'; 1 \<^bsup>& x' = 0\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> assms local.Al local.S11 local.distrib_right local.join.le_supE local.join.sup.absorb2 by fastforce
+      using \<open>\<And>thesis. (\<And>x'. \<lbrakk>x = 1 + x'; 1 \<^bsup>& x' = 0\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> assms local.Al local.A11 local.distrib_right local.join.le_supE local.join.sup.absorb2 by fastforce
     thus ?thesis
       by (metis local.subdistl)
   qed
@@ -139,9 +139,9 @@ next
   proof -
     assume "1 \<^bsup>& x \<noteq> 0"
     then obtain x' where assm1: "x = 1 + x'" and assm2: "1 \<^bsup>& x' = 0"
-      by (metis EWP) 
+      by (metis A12) 
     have "y = (z + y) \<cdot>  x\<^sup>\<star> "
-      using \<open>\<And>thesis. (\<And>x'. \<lbrakk>x = 1 + x'; 1 \<^bsup>& x' = 0\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> assms local.Ar local.S11 local.distrib_left local.join.le_supE local.join.sup.absorb2 by fastforce
+      using \<open>\<And>thesis. (\<And>x'. \<lbrakk>x = 1 + x'; 1 \<^bsup>& x' = 0\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> assms local.Ar local.A11 local.distrib_left local.join.le_supE local.join.sup.absorb2 by fastforce
     thus ?thesis
       by (metis local.join.sup.cobounded1 local.mult_isor)
   qed
@@ -173,29 +173,61 @@ sublocale A_algebra \<subseteq> K1_algebra ..
 
 sublocale A_algebra \<subseteq> K2_algebra ..
 
+sublocale antimirow_base \<subseteq> salomaa_base  plus times 1 0 less_eq less star "%x. 1 \<^bsup>& x \<noteq> 0"
+  apply unfold_locales        
+  apply (simp add: local.A11)
+  using local.A12 
+  by blast
+
+sublocale A_algebra \<subseteq> S_algebra plus times 1 0 less_eq less star "%x. 1 \<^bsup>& x \<noteq> 0"
+  apply unfold_locales        
+  apply (simp add: local.A11)
+  apply (simp add: local.Al)
+  apply simp
+  by (simp add: local.Ar)
+
 subsection \<open>Symbolic Regular Algebra's Axioms\<close>
 
-locale abstract_boolean_algebra = conj: abel_semigroup \<open>(\<^bold>\<sqinter>)\<close> + disj: abel_semigroup \<open>(\<^bold>\<squnion>)\<close>
-  for conj :: \<open>'a \<Rightarrow> 'a \<Rightarrow> 'a\<close>  (infixr \<open>\<^bold>\<sqinter>\<close> 70)
-    and disj :: \<open>'a \<Rightarrow> 'a \<Rightarrow> 'a\<close>  (infixr \<open>\<^bold>\<squnion>\<close> 65) +
-  fixes compl :: \<open>'a \<Rightarrow> 'a\<close>  (\<open>\<^bold>- _\<close> [81] 80)
-    and bot :: \<open>'a\<close>  
-    and top  :: \<open>'a\<close> 
-    and denote :: \<open>'a \<Rightarrow> 'b \<Rightarrow> bool\<close>
-  assumes conj_disj_distrib: \<open>x \<^bold>\<sqinter> (y \<^bold>\<squnion> z) = (x \<^bold>\<sqinter> y) \<^bold>\<squnion> (x \<^bold>\<sqinter> z)\<close>
-    and disj_conj_distrib: \<open>x \<^bold>\<squnion> (y \<^bold>\<sqinter> z) = (x \<^bold>\<squnion> y) \<^bold>\<sqinter> (x \<^bold>\<squnion> z)\<close>
-    and conj_one_right: \<open>x \<^bold>\<sqinter>  top = x\<close>
-    and disj_zero_right: \<open>x \<^bold>\<squnion> bot = x\<close>
-    and conj_cancel_right [simp]: \<open>x \<^bold>\<sqinter> \<^bold>- x = bot\<close>
-    and disj_cancel_right [simp]: \<open>x \<^bold>\<squnion> \<^bold>- x = top\<close>
-    and denote_bot: \<open>denote bot c = False\<close>
-    and denote_top: \<open>denote top c = True\<close>
-    and denote_compl: \<open>denote (\<^bold>- x) c = (\<not> denote x c)\<close>
-    and denote_conj: \<open>denote (\<phi> \<^bold>\<sqinter> \<psi>) c = (denote \<phi> c \<and> denote \<psi> c)\<close>
-    and denote_disj: \<open>denote (\<phi> \<^bold>\<squnion> \<psi>) c = (denote \<psi> c \<or> denote \<psi> c)\<close>
+text \<open> Freely generated boolean algebra on a set of predicates. \<close>
 
-locale symbolic_algebra = A_algebra + abstract_boolean_algebra +
-  assumes inf1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x \<^bsup>& y = conj x y"
-  assumes sup1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x + y = disj x y"
+datatype 'a BA = Atom1 'a | Top | Bot | Conj "'a BA" "'a BA" | Disj "'a BA" "'a BA" | Neg "'a BA"
+
+fun denote :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where 
+"denote (Atom1 a) c = (a = c)"|
+"denote Top c = True"|
+"denote Bot c = False"|
+"denote (Conj p q) c = (denote p c \<and> denote q c)"|
+"denote (Disj p q) c = (denote p c \<or> denote q c)"|
+"denote (Neg p) c = (\<not> denote p c)"
+
+locale EBA =  bot +  top + uminus + sup + inf +
+  fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
+  assumes denote_bot : "denote bot c = False"
+  assumes denote_top : "denote top c = True"
+  assumes denote_compl : "denote (uminus a) c = (\<not> denote a c)"
+  assumes denote_inf : "denote (inf a b) c = (denote a c \<and> denote b c)"
+  assumes denote_sup : "denote (sup a b) c = (denote a c \<or> denote b c)"
+begin
+
+
+end
+
+fun denote_char :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
+"denote_char (Atom1 a) c = (a = c)"|
+"denote_char Top c = True"|
+"denote_char Bot c = False"|
+"denote_char (Conj p q) c = (denote_char p c \<and> denote_char q c)"|
+"denote_char (Disj p q) c = (denote_char p c \<or> denote_char q c)"|
+"denote_char (Neg p) c = (\<not> denote_char p c)"
+
+interpretation BA : EBA Bot Top Neg Disj Conj denote_char 
+  apply standard 
+  apply auto 
+  done
+
+
+locale symbolic_algebra = A_algebra  + EBA +
+  assumes inf1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x \<^bsup>& y = Conj x y"
+  assumes sup1 : "\<lbrakk>p1 \<in> alp; p2 \<in> alp\<rbrakk> \<Longrightarrow> x + y = Disj x y"
 
 end
