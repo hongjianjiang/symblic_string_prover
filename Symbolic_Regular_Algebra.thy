@@ -9,11 +9,62 @@ theory Symbolic_Regular_Algebra
 imports Regular_Algebras Dioid_Models Kleene_Algebra_Models
 begin
 
+text \<open>Boolean Algebra\<close>
+
+datatype 'a BA = Atom 'a | Top | Bot | Conj "'a BA" "'a BA" | Disj "'a BA" "'a BA" | Neg "'a BA"
+
+fun denote :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where 
+"denote (Atom a) c = (a = c)"|
+"denote Top c = True"|
+"denote Bot c = False"|
+"denote (Conj p q) c = (denote p c \<and> denote q c)"|
+"denote (Disj p q) c = (denote p c \<or> denote q c)"|
+"denote (Neg p) c = (\<not> denote p c)"
+
+
+lemma "''ab'' \<in> {x|x. denote Top x}" apply auto done
+
+locale EBA =  bot +  top + uminus + sup + inf +
+  fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
+  assumes denote_bot : "denote bot c = False"
+  assumes denote_top : "denote top c = True"
+  assumes denote_compl : "denote (uminus a) c = (\<not> denote a c)"
+  assumes denote_inf : "denote (inf a b) c = (denote a c \<and> denote b c)"
+  assumes denote_sup : "denote (sup a b) c = (denote a c \<or> denote b c)"
+
+class ex_boolean_algebra = boolean_algebra + 
+  fixes alp1 :: "'a BA set"  
+  fixes sig :: 'a 
+  fixes denote1 :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool"
+  assumes s1: "a \<in> alp1 \<Longrightarrow> denote1 a sig"
+  assumes denote_bot1 : "denote1 Bot c = False"
+  assumes denote_top1 : "denote1 Top c = True"
+  assumes denote_compl1 : "denote1 (Neg a) c = (\<not> denote1 a c)"
+  assumes denote_inf1 : "denote1 (Conjs a b) c = (denote1 a c \<and> denote1 b c)"
+  assumes denote_sup1 : "denote1 (Disj a b) c = (denote1 a c \<or> denote1 b c)"
+begin 
+
+fun denote_char :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
+"denote_char (Atom a) c = (a = c)"|
+"denote_char Top c = True"|
+"denote_char Bot c = False"|
+"denote_char (Conj p q) c = (denote_char p c \<and> denote_char q c)"|
+"denote_char (Disj p q) c = (denote_char p c \<or> denote_char q c)"|
+"denote_char (Neg p) c = (\<not> denote_char p c)"
+
+
+ 
+sublocale EBA Bot Top Neg Disj Conj denote_char 
+  apply standard 
+  apply auto 
+  done
+end
+
 subsection \<open>Antimirow's Axioms\<close>
 
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
-class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
+class antimirow_base = star_dioid + ab_inter_semilattice_zero_one +
   fixes alp :: "'a set" ("\<bbbP>")
   assumes A11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
   assumes A12 : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
@@ -47,7 +98,6 @@ lemma inter_prod3: "1 \<^bsup>& x = 0 \<Longrightarrow> 1 \<^bsup>& y = 1 \<Long
 
 lemma inter_prod4: "1 \<^bsup>& x = 1 \<Longrightarrow> 1 \<^bsup>& y = 0 \<Longrightarrow> 1 \<^bsup>& (x \<cdot> y) = 0"
   by (simp add: local.A13)
-
 end
 
 sublocale Al_algebra \<subseteq> dual: Ar_algebra
@@ -190,56 +240,6 @@ subsection \<open>Symbolic Regular Algebra's Axioms\<close>
 
 text \<open> Freely generated boolean algebra on a set of predicates. \<close>
 
-datatype 'a BA = Atom1 'a | Top | Bot | Conj "'a BA" "'a BA" | Disj "'a BA" "'a BA" | Neg "'a BA"
-
-fun denote :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where 
-"denote (Atom1 a) c = (a = c)"|
-"denote Top c = True"|
-"denote Bot c = False"|
-"denote (Conj p q) c = (denote p c \<and> denote q c)"|
-"denote (Disj p q) c = (denote p c \<or> denote q c)"|
-"denote (Neg p) c = (\<not> denote p c)"
-
-locale EBA =  bot +  top + uminus + sup + inf +
-  fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
-  assumes denote_bot : "denote bot c = False"
-  assumes denote_top : "denote top c = True"
-  assumes denote_compl : "denote (uminus a) c = (\<not> denote a c)"
-  assumes denote_inf : "denote (inf a b) c = (denote a c \<and> denote b c)"
-  assumes denote_sup : "denote (sup a b) c = (denote a c \<or> denote b c)"
-begin
-
-
-end
-
-class t1 = boolean_algebra + 
-  fixes alp1 :: "'a BA"
-  fixes sig :: 'a 
-  fixes denote1 :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool"
-  assumes s1: "denote1 alp1 sig"
-  assumes denote_bot1 : "denote1 Bot c = False"
-  assumes denote_top1 : "denote1 Top c = True"
-  assumes denote_compl1 : "denote1 (Neg a) c = (\<not> denote1 a c)"
-  assumes denote_inf1 : "denote1 (Conjs a b) c = (denote1 a c \<and> denote1 b c)"
-  assumes denote_sup1 : "denote1 (Disj a b) c = (denote1 a c \<or> denote1 b c)"
-begin 
-
-fun denote_char :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
-"denote_char (Atom1 a) c = (a = c)"|
-"denote_char Top c = True"|
-"denote_char Bot c = False"|
-"denote_char (Conj p q) c = (denote_char p c \<and> denote_char q c)"|
-"denote_char (Disj p q) c = (denote_char p c \<or> denote_char q c)"|
-"denote_char (Neg p) c = (\<not> denote_char p c)"
-
-
-sublocale EBA Bot Top Neg Disj Conj denote_char 
-  apply standard 
-  apply auto 
-  done
-end
-
-
-class symbolic_algebra = A_algebra + t1
+class symbolic_algebra = A_algebra + ex_boolean_algebra
 
 end
