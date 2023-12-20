@@ -9,21 +9,14 @@ theory Symbolic_Regular_Algebra
 imports Regular_Algebras Dioid_Models Kleene_Algebra_Models
 begin
 
-
-notation
-  bot ("\<bottom>") and
-  top ("\<top>") and
-  inf  (infixl "\<sqinter>" 70) and
-  sup  (infixl "\<squnion>" 65)
-
 class boolean_algebra1 = bot + top + inf + sup + uminus 
 
 locale denotation =   
   fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
 begin 
 
-  fun sat_denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool" where
-  "sat_denote a b = denote a b" 
+fun sat_denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool" where
+"sat_denote a b = denote a b" 
 end
 
 locale eba = boolean_algebra1 + denotation +
