@@ -11,9 +11,29 @@ begin
 
 text \<open>Boolean Algebra\<close>
 
-datatype 'a BA = Atom 'a | Top | Bot | Conj "'a BA" "'a BA" | Disj "'a BA" "'a BA" | Neg "'a BA"
+datatype 'a BA = Atom 'a | Top | Bot  | 
+                 Conj "'a BA" "'a BA"  | 
+                  Disj "'a BA" "'a BA"  | Neg "'a BA"
 
-fun denote :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where 
+notation
+  bot ("\<bottom>") and
+  top ("\<top>") and
+  inf  (infixl "\<sqinter>" 70) and
+  sup  (infixl "\<squnion>" 65)
+
+class boolean_algebra1 = bot + top + inf + sup + uminus 
+
+locale denotation =   
+  fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
+ 
+locale eba = boolean_algebra1 + denotation +
+  assumes denote_bot : "denote Bot c = False"
+  assumes denote_top : "denote Top c = True"
+  assumes denote_compl : "denote (Neg a) c = (\<not> denote a c)"
+  assumes denote_inf : "denote (Conj a b) c  = (denote a c \<and> denote b c)"
+  assumes denote_sup : "denote (Disj a b) c = (denote a c \<or> denote b c)"
+
+fun denote :: "char BA \<Rightarrow> char \<Rightarrow> bool" where 
 "denote (Atom a) c = (a = c)"|
 "denote Top c = True"|
 "denote Bot c = False"|
@@ -21,56 +41,20 @@ fun denote :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
 "denote (Disj p q) c = (denote p c \<or> denote q c)"|
 "denote (Neg p) c = (\<not> denote p c)"
 
-
-lemma "''ab'' \<in> {x|x. denote Top x}" apply auto done
-
-locale EBA =  bot +  top + uminus + sup + inf +
-  fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
-  assumes denote_bot : "denote bot c = False"
-  assumes denote_top : "denote top c = True"
-  assumes denote_compl : "denote (uminus a) c = (\<not> denote a c)"
-  assumes denote_inf : "denote (inf a b) c = (denote a c \<and> denote b c)"
-  assumes denote_sup : "denote (sup a b) c = (denote a c \<or> denote b c)"
-
-class ex_boolean_algebra = boolean_algebra + 
-  fixes alp1 :: "'a BA set"  
-  fixes sig :: 'a 
-  fixes denote1 :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool"
-  assumes s1: "a \<in> alp1 \<Longrightarrow> denote1 a sig"
-  assumes denote_bot1 : "denote1 Bot c = False"
-  assumes denote_top1 : "denote1 Top c = True"
-  assumes denote_compl1 : "denote1 (Neg a) c = (\<not> denote1 a c)"
-  assumes denote_inf1 : "denote1 (Conjs a b) c = (denote1 a c \<and> denote1 b c)"
-  assumes denote_sup1 : "denote1 (Disj a b) c = (denote1 a c \<or> denote1 b c)"
-begin 
-
-fun denote_char :: "'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
-"denote_char (Atom a) c = (a = c)"|
-"denote_char Top c = True"|
-"denote_char Bot c = False"|
-"denote_char (Conj p q) c = (denote_char p c \<and> denote_char q c)"|
-"denote_char (Disj p q) c = (denote_char p c \<or> denote_char q c)"|
-"denote_char (Neg p) c = (\<not> denote_char p c)"
-
-
- 
-sublocale EBA Bot Top Neg Disj Conj denote_char 
-  apply standard 
-  apply auto 
-  done
-end
+interpretation t : eba Neg Conj Disj Bot Top denote 
+  apply standard by auto
 
 subsection \<open>Antimirow's Axioms\<close>
 
 text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<close>
 
-class antimirow_base = star_dioid + ab_inter_semilattice_zero_one +
+class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
   fixes alp :: "'a set" ("\<bbbP>")
-  assumes A11: "(1 + a)\<^sup>\<star> = a\<^sup>\<star>"
-  assumes A12 : "1 \<^bsup>& a \<noteq> 0 \<longleftrightarrow> (\<exists>y. a = 1 + y \<and> 1 \<^bsup>& y = 0)"
+  assumes A11: "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
+  assumes A12 : "1 \<^bsup>& x \<noteq> 0 \<longleftrightarrow> (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
   assumes A13: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
-  assumes A14: "1 \<^bsup>& a\<^sup>\<star> = 1"
-  assumes A15: "0 \<^bsup>& a = 0"
+  assumes A14: "1 \<^bsup>& x\<^sup>\<star> = 1"
+  assumes A15: "0 \<^bsup>& x = 0"
   assumes A16: "\<lbrakk>p \<in> \<bbbP>\<rbrakk> \<Longrightarrow> 1 \<^bsup>& p = 0"
   assumes A17: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (p \<cdot> a) \<^bsup>& (q \<cdot> b)  = (p \<^bsup>& q) \<cdot> (a \<^bsup>& b)"
   assumes A18: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> p) \<^bsup>& (b \<cdot> q)  = (a \<^bsup>& b) \<cdot> (p \<^bsup>& q)"

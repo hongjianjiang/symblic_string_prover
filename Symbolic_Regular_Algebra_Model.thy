@@ -12,10 +12,21 @@ datatype 'a rexp =
 | Times "'a rexp" "'a rexp"
 | Star "'a rexp"
 | Inter "'a rexp" "'a rexp"
+| Negation "'a rexp"
 
 text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
 adapted from there.\<close>
+
+primrec sizeOf_re :: "'a rexp \<Rightarrow> nat" where
+"sizeOf_re Zero = 0" |
+"sizeOf_re One = 0" |
+"sizeOf_re (Pred _) = 0" |
+"sizeOf_re (Plus m n) = 1 + sizeOf_re m + sizeOf_re n" |
+"sizeOf_re (Times m n) = 1 + sizeOf_re m + sizeOf_re n" |
+"sizeOf_re (Star m) = 1 + sizeOf_re m" |
+"sizeOf_re (Inter m n) = 1 + sizeOf_re m + sizeOf_re n"|
+"sizeOf_re (Negation m) = 1 + sizeOf_re m"
 
 primrec lang :: "'a BA rexp \<Rightarrow> 'a lan" where
   "lang (Zero) = 0"
@@ -26,17 +37,32 @@ primrec lang :: "'a BA rexp \<Rightarrow> 'a lan" where
 | "lang (Star x) = (lang x)\<^sup>\<star>" 
 | "lang (Inter x y)  = lang x \<^bsup>& lang y"
 
+text \<open>Boolean Algebra and Regular Expression Model Section\<close>
+
+fun string_to_characterClass :: "string \<Rightarrow> char BA" where
+  "string_to_characterClass s = List.foldr (\<lambda>x y. Disj x y) (List.map (\<lambda>x. Atom x) s) Bot"  
+
+fun string_to_RE :: "string \<Rightarrow> char BA rexp" where
+  "string_to_RE s = Pred (string_to_characterClass s)"   
+
+definition "digit = string_to_characterClass ''0123456789''"
+
+definition "lc = string_to_characterClass ''abcdefghijklmnopqrstuvwxyz''"
+
+definition "uc = string_to_characterClass ''ABCDEFGHIJKLMNOPQRSTUVWXYZ''"
+
+definition "anys = Pred Top"
+
+value "lc"
+value "lang (Pred lc)"
 fun regexp_compl ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" where 
   "regexp_compl r1 r2 = (UNIV - lang r1 = lang r2)"
 
 fun regexp_empty ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" where 
   "regexp_empty r1 r2 = (lang r1 \<inter> lang r2 = {})"
 
-definition alpset :: "nat list set" where 
-  "alpset = {[1,2], [1,3], [3]}"
-
-definition alpset1 :: "'a lan" where 
-"alpset1 \<equiv> UNIV - {[]}" 
+definition alpset :: "char BA set" where 
+"alpset \<equiv> {digit, lc, uc}" 
 
 typedef 'a reg_lan = "(range (%r. lang r)) :: ('a list set) set"
   by auto 
@@ -322,7 +348,7 @@ proof -
     by (metis kleene_algebra_class.dual.add_zerol kleene_algebra_class.dual.add_zeror)
 qed
 
-interpretation lan_antimirow_l: Al_algebra "(+)" "1 :: 'a lan" "(\<cdot>)" "(\<^bsup>&)" "0"  "(\<subseteq>)" "(\<subset>)" "star" "{x|x.[] \<notin> x}" 
+interpretation lan_antimirow_l: Al_algebra "(+)" "1 :: char lan" "(\<cdot>)" "(\<^bsup>&)" "0"  "(\<subseteq>)" "(\<subset>)" "star" "lang ` {Pred digit, Pred uc, Pred lc}" 
 proof
   fix x y z:: "'a lan"
   show "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -342,21 +368,42 @@ proof
   show "0 \<^bsup>& x = 0"
     by simp
 next 
-  fix p :: "'a list set" and x :: "nat lan"
-  show "p \<in> {x |x. [] \<notin> x} \<Longrightarrow> 1 \<^bsup>& p = 0"
-    by (simp add:one_set_def inter_set_def one_list_def zero_set_def) 
+  fix p :: "char list set" and x :: "nat lan"
+  show "p \<in> lang ` {Pred digit, Pred uc, Pred lc} \<Longrightarrow> 1 \<^bsup>& p = 0"
+    apply (simp add:one_set_def inter_set_def one_list_def zero_set_def) 
+    apply (erule disjE) apply simp apply (erule disjE) apply simp apply simp done
+    
 next 
-  fix p q :: "'a list set" and x y z a b :: "'a lan"
-  show "p \<in> {x |x. [] \<notin> x} \<Longrightarrow> q \<in> {x |x. [] \<notin> x} \<Longrightarrow> p \<cdot> a \<^bsup>& (q \<cdot> b) = p \<^bsup>& q \<cdot> (a \<^bsup>& b)"
-    apply(simp add:c_prod_def inter_set_def times_list_def)  sorry
-  show "p \<in> {x |x. [] \<notin> x} \<Longrightarrow> q \<in> {x |x. [] \<notin> x} \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
+  fix p q :: "char list set" and x y z a b :: "char lan"
+  show "p \<in> Symbolic_Regular_Algebra_Model.lang ` {Pred digit, Pred uc, Pred lc} \<Longrightarrow>
+       q \<in> Symbolic_Regular_Algebra_Model.lang ` {Pred digit, Pred uc, Pred lc} \<Longrightarrow> p \<cdot> a \<^bsup>& (q \<cdot> b) = p \<^bsup>& q \<cdot> (a \<^bsup>& b)"
     apply(simp add:c_prod_def inter_set_def times_list_def) 
-    sorry
+    apply(erule disjE) 
+    subgoal apply(erule disjE) 
+       apply (smt (verit, ccfv_threshold) Collect_cong append_Cons list.inject mem_Collect_eq same_append_eq)
+      apply (erule disjE) apply simp 
+       apply (smt (verit, ccfv_SIG) Collect_cong append_Cons append_self_conv2 list.inject)
+      apply simp
+      by (smt (verit, ccfv_threshold) Collect_cong append_Cons append_self_conv2 list.inject)
+    subgoal apply(erule disjE) 
+      apply (erule disjE) apply simp 
+        apply (smt (verit) Collect_cong append_Cons append_self_conv2 list.inject)
+      apply simp        apply (smt (verit) Collect_cong append_Cons append_self_conv2 list.inject)
+      apply(erule disjE) apply (erule disjE) apply simp   apply (smt (verit) Collect_cong append_Cons append_self_conv2 list.inject)
+      apply simp        apply (smt (verit) Collect_cong append_Cons append_self_conv2 list.inject)
+      apply(erule disjE) apply simp        apply (smt (verit) Collect_cong append_Cons append_self_conv2 list.inject)
+      apply simp        apply (smt (verit) Collect_cong append_Cons append_self_conv2 list.inject)
+      done 
+    done
+  show "p \<in> Symbolic_Regular_Algebra_Model.lang ` {Pred digit, Pred uc, Pred lc} \<Longrightarrow>
+       q \<in> Symbolic_Regular_Algebra_Model.lang ` {Pred digit, Pred uc, Pred lc} \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
+    apply(simp add:c_prod_def inter_set_def times_list_def) apply auto
+    done
 qed
 
-interpretation lan_antimirow_r: Ar_algebra"(+)" "1 :: 'a lan" "(\<cdot>)" "(\<^bsup>&)" "0"   "(\<subseteq>)" "(\<subset>)" "star" "{x|x.[] \<notin> x}"
+interpretation lan_antimirow_r: Ar_algebra"(+)" "1 :: char lan" "(\<cdot>)" "(\<^bsup>&)" "0"   "(\<subseteq>)" "(\<subset>)" "star" "lang ` {Pred digit, Pred uc, Pred lc}" 
 proof
-  fix x y z :: "'a lan"
+  fix x y z :: "char lan"
   show "1 + x\<^sup>\<star> \<cdot> x = x\<^sup>\<star>"
     by (metis kleene_algebra_class.star_unfoldr_eq)
   show "1 \<^bsup>& y = 0 \<Longrightarrow> x = x \<cdot> y + z \<Longrightarrow> x = z \<cdot> y\<^sup>\<star>"
@@ -407,6 +454,7 @@ proof (induct x)
     then show ?thesis
       by (simp add: l_ewp_def one_list_def zero_set_def)
   qed
+  case (Negation x) thus ?case sorry 
 qed (simp_all add:l_ewp_def zero_set_def one_set_def one_list_def plus_set_def c_prod_def times_list_def inter_set_def)
 
 theorem regexp_ewp:
@@ -512,15 +560,20 @@ next
   show "P (Pred x)"
     apply (simp add:P_def r_lang_def)
     using rexp_ewp.simps(7) by fastforce
+next 
+  fix x 
+  assume assm:"P x"
+  thus "P (Negation x)"
+    sorry
 qed
 
 
 instantiation reg_lan :: (type) Ar_algebra
 begin
 
-  lift_definition alp_reg_lan :: "'a reg_lan set"
-  is alpset1 
-    apply(simp add:alpset1_def)
+  lift_definition alp_reg_lan :: "char reg_lan set"
+  is alpset
+    apply(simp add:alpse_def)
      apply transfer nitpick
     sledgehammer
 
@@ -654,22 +707,6 @@ theorem arden_regexp_r:
   apply transfer
   by (metis Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.lang.simps(7) Symbolic_Regular_Algebra_Model.rexp.distinct(2) alpset_def arden_r insertE neq_Nil_conv rexp_ewp_l_ewp singletonD)
 
-text \<open>Boolean Algebra and Regular Expression Model Section\<close>
 
-fun string_to_characterClass :: "string \<Rightarrow> char BA" where
-  "string_to_characterClass s = List.foldr (\<lambda>x y. Disj x y) (List.map (\<lambda>x. Atom x) s) Bot"  
-
-fun string_to_RE :: "string \<Rightarrow> char BA rexp" where
-  "string_to_RE s = Pred (string_to_characterClass s)"   
-
-definition "digit = string_to_characterClass ''0123456789''"
-
-definition "lc = string_to_characterClass ''abcdefghijklmnopqrstuvwxyz''"
-
-definition "uc = string_to_characterClass ''ABCDEFGHIJKLMNOPQRSTUVWXYZ''"
-
-definition "anys = Pred Top"
-
-value "string_to_RE ''0123456789''"
 
 end
