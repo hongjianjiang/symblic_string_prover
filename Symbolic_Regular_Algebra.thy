@@ -11,9 +11,13 @@ begin
 
 text \<open>Boolean Algebra\<close>
 
-datatype 'a BA = Atom 'a | Top | Bot  | 
+datatype (atoms: 'a) BA = Atom 'a | Top | Bot  | 
                  Conj "'a BA" "'a BA"  | 
                   Disj "'a BA" "'a BA"  | Neg "'a BA"
+
+lemma "atoms (Top) = {}"
+  apply auto done
+
 
 notation
   bot ("\<bottom>") and
@@ -24,25 +28,36 @@ notation
 class boolean_algebra1 = bot + top + inf + sup + uminus 
 
 locale denotation =   
+  fixes alp :: 'a 
+  fixes sigma :: 'b
   fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
- 
+begin 
+fun sat_denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool" where
+"sat_denote a b = denote a b" 
+end
+
 locale eba = boolean_algebra1 + denotation +
-  assumes denote_bot : "denote Bot c = False"
-  assumes denote_top : "denote Top c = True"
-  assumes denote_compl : "denote (Neg a) c = (\<not> denote a c)"
-  assumes denote_inf : "denote (Conj a b) c  = (denote a c \<and> denote b c)"
-  assumes denote_sup : "denote (Disj a b) c = (denote a c \<or> denote b c)"
+  assumes denote_bot : "sat_denote bot c = False"
+  assumes denote_top : "sat_denote top c = True"
+  assumes denote_compl : "sat_denote (uminus a) c = (\<not> sat_denote a c)"
+  assumes denote_inf : "sat_denote (sup a b) c  = (sat_denote a c \<and> sat_denote b c)"
+  assumes denote_sup : "sat_denote (inf a b) c = (sat_denote a c \<or> sat_denote b c)"
+begin
 
-fun denote :: "char BA \<Rightarrow> char \<Rightarrow> bool" where 
-"denote (Atom a) c = (a = c)"|
-"denote Top c = True"|
-"denote Bot c = False"|
-"denote (Conj p q) c = (denote p c \<and> denote q c)"|
-"denote (Disj p q) c = (denote p c \<or> denote q c)"|
-"denote (Neg p) c = (\<not> denote p c)"
+end
 
-interpretation t : eba Neg Conj Disj Bot Top denote 
-  apply standard by auto
+fun denote_ba ::"'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
+"denote_ba Top c = True"|
+"denote_ba Bot c = False"|
+"denote_ba (Atom a) c = (a = c)"|
+"denote_ba (Conj a b) c = (denote_ba a c \<and> denote_ba b c)"|
+"denote_ba (Disj a b) c = (denote_ba a c \<or> denote_ba b c)"|
+"denote_ba (Neg a) c = (\<not> denote_ba a c)"
+
+interpretation denote : eba where bot = Bot and top = Top and uminus = Neg and sup = Conj and inf = Disj and denote = denote_ba
+  apply unfold_locales
+  apply (auto simp add: denotation.sat_denote.simps)
+  done
 
 subsection \<open>Antimirow's Axioms\<close>
 
@@ -51,7 +66,7 @@ text \<open>Antimirow's axiomatisations of Regular Algebra~\cite{Antimirow's}.\<
 class antimirow_base = star_dioid + ab_inter_semilattice_zero_one + 
   fixes alp :: "'a set" ("\<bbbP>")
   assumes A11: "(1 + x)\<^sup>\<star> = x\<^sup>\<star>"
-  assumes A12 : "1 \<^bsup>& x \<noteq> 0 \<longleftrightarrow> (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"
+  assumes A12 : "1 \<^bsup>& x \<noteq> 0 \<longleftrightarrow> (\<exists>y. x = 1 + y \<and> 1 \<^bsup>& y = 0)"   
   assumes A13: "1 \<^bsup>& (x \<cdot> y) = 1 \<^bsup>& x \<^bsup>& y"
   assumes A14: "1 \<^bsup>& x\<^sup>\<star> = 1"
   assumes A15: "0 \<^bsup>& x = 0"
@@ -224,6 +239,6 @@ subsection \<open>Symbolic Regular Algebra's Axioms\<close>
 
 text \<open> Freely generated boolean algebra on a set of predicates. \<close>
 
-class symbolic_algebra = A_algebra + ex_boolean_algebra
+locale symbolic_algebra = A_algebra + eba
 
 end
