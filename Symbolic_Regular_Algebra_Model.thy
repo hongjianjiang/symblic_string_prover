@@ -9,14 +9,14 @@ datatype (atoms: 'a) BA = Atom 'a | Top | Bot  |
                   Disj "'a BA" "'a BA"  | Neg "'a BA"
 
 datatype 'a rexp = 
-  Zero 
-| One 
-| Pred 'a
-| Plus "'a rexp" "'a rexp"
-| Times "'a rexp" "'a rexp"
-| Star "'a rexp"
-| Inter "'a rexp" "'a rexp"
-| Negation "'a rexp"
+        Zero 
+      | One 
+      | Pred 'a
+      | Plus "'a rexp" "'a rexp"
+      | Times "'a rexp" "'a rexp"
+      | Star "'a rexp"
+      | Inter "'a rexp" "'a rexp"
+      | Negation "'a rexp"
 
 text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
@@ -588,7 +588,6 @@ begin
   is alpset
     apply(simp add:alpse_def)
      apply transfer nitpick
-    sledgehammer
 
 instance proof
   fix x :: "reg_lan"

@@ -21,8 +21,9 @@ class boolean_algebra1 = bot + top + inf + sup + uminus
 locale denotation =   
   fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
 begin 
-fun sat_denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool" where
-"sat_denote a b = denote a b" 
+
+  fun sat_denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool" where
+  "sat_denote a b = denote a b" 
 end
 
 locale eba = boolean_algebra1 + denotation +
