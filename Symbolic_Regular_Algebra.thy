@@ -9,15 +9,6 @@ theory Symbolic_Regular_Algebra
 imports Regular_Algebras Dioid_Models Kleene_Algebra_Models
 begin
 
-text \<open>Boolean Algebra\<close>
-
-datatype (atoms: 'a) BA = Atom 'a | Top | Bot  | 
-                 Conj "'a BA" "'a BA"  | 
-                  Disj "'a BA" "'a BA"  | Neg "'a BA"
-
-lemma "atoms (Top) = {}"
-  apply auto done
-
 
 notation
   bot ("\<bottom>") and
@@ -28,8 +19,6 @@ notation
 class boolean_algebra1 = bot + top + inf + sup + uminus 
 
 locale denotation =   
-  fixes alp :: 'a 
-  fixes sigma :: 'b
   fixes denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool"
 begin 
 fun sat_denote :: "'a \<Rightarrow> 'b \<Rightarrow> bool" where
@@ -42,22 +31,6 @@ locale eba = boolean_algebra1 + denotation +
   assumes denote_compl : "sat_denote (uminus a) c = (\<not> sat_denote a c)"
   assumes denote_inf : "sat_denote (sup a b) c  = (sat_denote a c \<and> sat_denote b c)"
   assumes denote_sup : "sat_denote (inf a b) c = (sat_denote a c \<or> sat_denote b c)"
-begin
-
-end
-
-fun denote_ba ::"'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
-"denote_ba Top c = True"|
-"denote_ba Bot c = False"|
-"denote_ba (Atom a) c = (a = c)"|
-"denote_ba (Conj a b) c = (denote_ba a c \<and> denote_ba b c)"|
-"denote_ba (Disj a b) c = (denote_ba a c \<or> denote_ba b c)"|
-"denote_ba (Neg a) c = (\<not> denote_ba a c)"
-
-interpretation denote : eba where bot = Bot and top = Top and uminus = Neg and sup = Conj and inf = Disj and denote = denote_ba
-  apply unfold_locales
-  apply (auto simp add: denotation.sat_denote.simps)
-  done
 
 subsection \<open>Antimirow's Axioms\<close>
 

@@ -4,6 +4,10 @@ begin
 
 subsection \<open>Regular Languages\<close>
 
+datatype (atoms: 'a) BA = Atom 'a | Top | Bot  |
+                 Conj "'a BA" "'a BA"  | 
+                  Disj "'a BA" "'a BA"  | Neg "'a BA"
+
 datatype 'a rexp = 
   Zero 
 | One 
@@ -18,26 +22,37 @@ text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
 adapted from there.\<close>
 
-primrec sizeOf_re :: "'a rexp \<Rightarrow> nat" where
-"sizeOf_re Zero = 0" |
-"sizeOf_re One = 0" |
-"sizeOf_re (Pred _) = 0" |
-"sizeOf_re (Plus m n) = 1 + sizeOf_re m + sizeOf_re n" |
-"sizeOf_re (Times m n) = 1 + sizeOf_re m + sizeOf_re n" |
-"sizeOf_re (Star m) = 1 + sizeOf_re m" |
-"sizeOf_re (Inter m n) = 1 + sizeOf_re m + sizeOf_re n"|
-"sizeOf_re (Negation m) = 1 + sizeOf_re m"
+primrec size_of_re :: "'a rexp \<Rightarrow> nat" where
+  "size_of_re Zero = 0" |
+  "size_of_re One = 0" |
+  "size_of_re (Pred _) = 0" |
+  "size_of_re (Plus m n) = 1 + size_of_re m + size_of_re n" |
+  "size_of_re (Times m n) = 1 + size_of_re m + size_of_re n" |
+  "size_of_re (Star m) = 1 + size_of_re m" |
+  "size_of_re (Inter m n) = 1 + size_of_re m + size_of_re n"|
+  "size_of_re (Negation m) = 1 + size_of_re m"
+
+fun denote_ba ::"'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
+  "denote_ba Top c = True"|
+  "denote_ba Bot c = False"|
+  "denote_ba (Atom a) c = (a = c)"|
+  "denote_ba (Conj a b) c = (denote_ba a c \<and> denote_ba b c)"|
+  "denote_ba (Disj a b) c = (denote_ba a c \<or> denote_ba b c)"|
+  "denote_ba (Neg a) c = (\<not> denote_ba a c)"
+
+interpretation denote : eba where bot = Bot and top = Top and uminus = Neg and sup = Conj and inf = Disj and denote = denote_ba
+  apply unfold_locales
+  apply (auto simp add: denotation.sat_denote.simps)
+  done
 
 primrec lang :: "'a BA rexp \<Rightarrow> 'a lan" where
   "lang (Zero) = 0"
 | "lang (One) = 1" 
-| "lang (Pred a) = {[x]|x. denote a x}"
+| "lang (Pred a) = {[x]|x. denote.sat_denote a x}"
 | "lang (Plus x y) = lang x + lang y"
 | "lang (Times x y) = lang x \<cdot> lang y"
 | "lang (Star x) = (lang x)\<^sup>\<star>" 
 | "lang (Inter x y)  = lang x \<^bsup>& lang y"
-
-text \<open>Boolean Algebra and Regular Expression Model Section\<close>
 
 fun string_to_characterClass :: "string \<Rightarrow> char BA" where
   "string_to_characterClass s = List.foldr (\<lambda>x y. Disj x y) (List.map (\<lambda>x. Atom x) s) Bot"  
@@ -53,8 +68,6 @@ definition "uc = string_to_characterClass ''ABCDEFGHIJKLMNOPQRSTUVWXYZ''"
 
 definition "anys = Pred Top"
 
-value "lc"
-value "lang (Pred lc)"
 fun regexp_compl ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" where 
   "regexp_compl r1 r2 = (UNIV - lang r1 = lang r2)"
 
@@ -706,7 +719,5 @@ theorem arden_regexp_r:
   using assms
   apply transfer
   by (metis Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.lang.simps(7) Symbolic_Regular_Algebra_Model.rexp.distinct(2) alpset_def arden_r insertE neq_Nil_conv rexp_ewp_l_ewp singletonD)
-
-
 
 end
