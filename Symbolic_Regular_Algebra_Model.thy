@@ -53,12 +53,13 @@ primrec lang :: "'a BA rexp \<Rightarrow> 'a lan" where
 | "lang (Times x y) = lang x \<cdot> lang y"
 | "lang (Star x) = (lang x)\<^sup>\<star>" 
 | "lang (Inter x y)  = lang x \<^bsup>& lang y"
+| "lang (Negation x) = UNIV - lang x"
 
 fun string_to_characterClass :: "string \<Rightarrow> char BA" where
-  "string_to_characterClass s = List.foldr (\<lambda>x y. Disj x y) (List.map (\<lambda>x. Atom x) s) Bot"  
+  "string_to_characterClass s = List.foldr (\<lambda>x y. Disj x y) (List.map (\<lambda>x. Atom x) s) Bot"
 
 fun string_to_RE :: "string \<Rightarrow> char BA rexp" where
-  "string_to_RE s = Pred (string_to_characterClass s)"   
+  "string_to_RE s = Pred (string_to_characterClass s)"
 
 definition "digit = string_to_characterClass ''0123456789''"
 
@@ -74,50 +75,50 @@ fun regexp_compl ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" wher
 fun regexp_empty ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" where 
   "regexp_empty r1 r2 = (lang r1 \<inter> lang r2 = {})"
 
-definition alpset :: "char BA set" where 
-"alpset \<equiv> {digit, lc, uc}" 
+definition alpset :: "char list set set" where 
+"alpset \<equiv>  (lang ` (Pred ` {digit, lc, uc}))" 
 
-typedef 'a reg_lan = "(range (%r. lang r)) :: ('a list set) set"
+typedef reg_lan = "(range lang) :: (char list set) set"
   by auto 
 
 setup_lifting type_definition_reg_lan
 
-instantiation reg_lan :: (type) ex_kleene_algebra
+instantiation reg_lan :: ex_kleene_algebra
 begin
 
-  lift_definition zero_reg_lan :: "'a reg_lan"
+  lift_definition zero_reg_lan :: "reg_lan"
     is 0
     using lang.simps(1) by blast
 
-  lift_definition one_reg_lan :: "'a reg_lan"
+  lift_definition one_reg_lan :: "reg_lan"
     is 1 
     using lang.simps(2) by blast
 
-  lift_definition less_eq_reg_lan :: "'a reg_lan \<Rightarrow> 'a reg_lan \<Rightarrow> bool"
+  lift_definition less_eq_reg_lan :: "reg_lan \<Rightarrow> reg_lan \<Rightarrow> bool"
     is less_eq .
 
-  lift_definition less_reg_lan :: "'a reg_lan \<Rightarrow> 'a reg_lan \<Rightarrow> bool"
+  lift_definition less_reg_lan :: "reg_lan \<Rightarrow> reg_lan \<Rightarrow> bool"
     is less .
 
-  lift_definition plus_reg_lan :: "'a reg_lan \<Rightarrow> 'a reg_lan \<Rightarrow> 'a reg_lan"
+  lift_definition plus_reg_lan :: "reg_lan \<Rightarrow> reg_lan \<Rightarrow> reg_lan"
     is plus
     using lang.simps(4) by blast
 
-  lift_definition times_reg_lan :: "'a reg_lan \<Rightarrow> 'a reg_lan \<Rightarrow> 'a reg_lan"
+  lift_definition times_reg_lan :: "reg_lan \<Rightarrow> reg_lan \<Rightarrow> reg_lan"
     is times
     using lang.simps(5) by blast
 
-  lift_definition star_reg_lan :: "'a reg_lan \<Rightarrow> 'a reg_lan"
+  lift_definition star_reg_lan :: "reg_lan \<Rightarrow> reg_lan"
     is star
     using lang.simps(6) by blast
 
-  lift_definition inter_reg_lan :: "'a reg_lan \<Rightarrow> 'a reg_lan \<Rightarrow> 'a reg_lan"
+  lift_definition inter_reg_lan :: "reg_lan \<Rightarrow> reg_lan \<Rightarrow> reg_lan"
     is inter
     using lang.simps(7) by blast
 
   instance
   proof
-    fix x y z :: "'a reg_lan"
+    fix x y z :: "reg_lan"
     show "x + y + z = x + (y + z)"
       by transfer (metis join_semilattice_class.add_assoc')
     show "x + y = y + x"
@@ -442,16 +443,17 @@ primrec rexp_ewp :: "'a BA rexp \<Rightarrow> bool" where
   "rexp_ewp (s \<cdot>\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
   "rexp_ewp (s &\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
   "rexp_ewp (s\<^sup>\<star>\<^sub>r) = True"| 
-  "rexp_ewp (Pred a) = False"
+  "rexp_ewp (Pred a) = False"|
+  "rexp_ewp (Negation a) = (\<not> rexp_ewp a)"
 
 abbreviation "ro(s) \<equiv> (if (rexp_ewp s) then 1\<^sub>r else 0\<^sub>r)"
 
-lift_definition r_ewp :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" .
+lift_definition r_ewp :: "reg_lan \<Rightarrow> bool" is "l_ewp" .
 
-lift_definition r_lang :: "'a BA rexp \<Rightarrow> 'a reg_lan"  is "\<lambda>x. lang x"
+lift_definition r_lang :: "char BA rexp \<Rightarrow> reg_lan"  is "\<lambda>x. lang x"
   by (simp)
 
-abbreviation r_sim :: "'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" (infix "\<sim>" 50) where
+abbreviation r_sim :: "char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> bool" (infix "\<sim>" 50) where
   "p \<sim> q \<equiv> r_lang p = r_lang q"
 
 declare Rep_reg_lan [simp]
@@ -467,7 +469,6 @@ proof (induct x)
     then show ?thesis
       by (simp add: l_ewp_def one_list_def zero_set_def)
   qed
-  case (Negation x) thus ?case sorry 
 qed (simp_all add:l_ewp_def zero_set_def one_set_def one_list_def plus_set_def c_prod_def times_list_def inter_set_def)
 
 theorem regexp_ewp:
@@ -580,14 +581,267 @@ next
     sorry
 qed
 
+lemma "{x|x. x = a \<or> x = b} \<in> range lang \<Longrightarrow> ({x|x. x = a} \<union> {x|x. x = b}) \<in> range lang"
+  apply simp
+  using Collect_cong Collect_disj_eq by auto
 
-instantiation reg_lan :: (type) Ar_algebra
+lemma t1:"{[x]|x. a = x} \<in> range lang"
+  using lang.simps(3)[of "Atom a"]
+  by (smt (verit) Collect_cong UNIV_I denote.sat_denote.elims(2) denote.sat_denote.elims(3) denote_ba.simps(3) image_iff)
+
+lemma alp_lem_digit:"{[x] |x. denote_ba digit x} \<in> range Symbolic_Regular_Algebra_Model.lang"
+  apply(simp add:digit_def)
+proof -
+  have c1:"{[x] |x. CHR ''0'' = x}  \<union> {[x] |x. CHR ''1'' = x} \<union> {[x] |x. CHR ''2'' = x} \<union> {[x] |x. CHR ''3'' = x} \<union> {[x] |x. CHR ''4'' = x}  \<union> {[x] |x. CHR ''5'' = x} \<union> {[x] |x. CHR ''6'' = x}  \<union> {[x] |x. CHR ''7'' = x} \<union> {[x] |x. CHR ''8'' = x}  \<union> {[x] |x. CHR ''9'' = x} = {[x] |x. CHR ''0'' = x \<or> CHR ''1'' = x \<or> CHR ''2'' = x \<or> CHR ''3'' = x \<or> CHR ''4'' = x \<or> CHR ''5'' = x \<or> CHR ''6'' = x \<or> CHR ''7'' = x \<or> CHR ''8'' = x \<or> CHR ''9'' = x}"
+    apply auto done
+  have c2:"{[x] |x. CHR ''0'' = x} : range lang"
+    using t1 by fastforce
+  have c3:"{[x] |x. CHR ''1'' = x} : range lang"
+    using t1 by fastforce
+  have c4:"{[x] |x. CHR ''2'' = x} : range lang"
+    using t1 by fastforce
+  have c5:"{[x] |x. CHR ''3'' = x} : range lang"
+  using t1 by fastforce
+  have c6:"{[x] |x. CHR ''4'' = x} : range lang"
+    using t1 by fastforce
+  have c7:"{[x] |x. CHR ''5'' = x} : range lang"
+    using t1 by fastforce
+  have c8:"{[x] |x. CHR ''6'' = x} : range lang"
+    using t1 by fastforce
+  have c9:"{[x] |x. CHR ''7'' = x} : range lang"
+    using t1 by fastforce
+ have c10:"{[x] |x. CHR ''8'' = x} : range lang"
+   using t1 by fastforce
+ have c11:"{[x] |x. CHR ''9'' = x} : range lang"
+    using t1 by fastforce
+  have "{[x] |x. CHR ''0'' = x}  \<union> {[x] |x. CHR ''1'' = x} \<union> {[x] |x. CHR ''2'' = x} \<union> {[x] |x. CHR ''3'' = x} \<union> {[x] |x. CHR ''4'' = x}  \<union> {[x] |x. CHR ''5'' = x} \<union> {[x] |x. CHR ''6'' = x}  \<union> {[x] |x. CHR ''7'' = x} \<union> {[x] |x. CHR ''8'' = x}  \<union> {[x] |x. CHR ''9'' = x} : range lang"
+    using c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 lang.simps(4)
+    apply (simp  add: image_iff plus_set_def rangeI)  
+    by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) insert_is_Un plus_set_def)
+  then show "{[x] |x. CHR ''0'' = x \<or> CHR ''1'' = x \<or> CHR ''2'' = x \<or> CHR ''3'' = x \<or> CHR ''4'' = x \<or> CHR ''5'' = x \<or> CHR ''6'' = x \<or> CHR ''7'' = x \<or> CHR ''8'' = x \<or> CHR ''9'' = x}
+    \<in> range Symbolic_Regular_Algebra_Model.lang" using c1 
+    by auto 
+qed
+
+lemma alp_lem_lc:"{[x] |x. denote_ba lc x} \<in> range Symbolic_Regular_Algebra_Model.lang"
+  apply(simp add:lc_def)
+proof -
+  have c1:"{[x] |x. CHR ''a'' = x}  \<union> {[x] |x. CHR ''b'' = x} \<union> {[x] |x. CHR ''c'' = x} \<union> {[x] |x. CHR ''d'' = x} \<union> {[x] |x. CHR ''e'' = x}  \<union> {[x] |x. CHR ''f'' = x} \<union> {[x] |x. CHR ''g'' = x}  \<union> 
+           {[x] |x. CHR ''h'' = x} \<union> {[x] |x. CHR ''i'' = x}  \<union> {[x] |x. CHR ''j'' = x} \<union> {[x] |x. CHR ''k'' = x} \<union> {[x] |x. CHR ''l'' = x}  \<union> {[x] |x. CHR ''m'' = x} \<union> {[x] |x. CHR ''n'' = x}  \<union> 
+           {[x] |x. CHR ''o'' = x} \<union> {[x] |x. CHR ''p'' = x}  \<union> {[x] |x. CHR ''q'' = x} \<union> {[x] |x. CHR ''r'' = x} \<union> {[x] |x. CHR ''s'' = x}  \<union> {[x] |x. CHR ''t'' = x} \<union> {[x] |x. CHR ''u'' = x}  \<union> 
+           {[x] |x. CHR ''v'' = x} \<union> {[x] |x. CHR ''w'' = x}  \<union> {[x] |x. CHR ''x'' = x} \<union> {[x] |x. CHR ''y'' = x} \<union> {[x] |x. CHR ''z'' = x} 
+      =  {[x] |x.
+     CHR ''a'' = x \<or>
+     CHR ''b'' = x \<or>
+     CHR ''c'' = x \<or>
+     CHR ''d'' = x \<or>
+     CHR ''e'' = x \<or>
+     CHR ''f'' = x \<or>
+     CHR ''g'' = x \<or>
+     CHR ''h'' = x \<or>
+     CHR ''i'' = x \<or>
+     CHR ''j'' = x \<or>
+     CHR ''k'' = x \<or>
+     CHR ''l'' = x \<or>
+     CHR ''m'' = x \<or>
+     CHR ''n'' = x \<or>
+     CHR ''o'' = x \<or> CHR ''p'' = x \<or> CHR ''q'' = x \<or> CHR ''r'' = x \<or> CHR ''s'' = x \<or> CHR ''t'' = x \<or> CHR ''u'' = x \<or> CHR ''v'' = x \<or> CHR ''w'' = x \<or> CHR ''x'' = x \<or> CHR ''y'' = x \<or> CHR ''z'' = x}"
+    by fastforce 
+  have 2:"{[x] |x. CHR ''a'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 3: "{[x] |x. CHR ''b'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 4:"{[x] |x. CHR ''c'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 5:"{[x] |x. CHR ''d'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 6:"{[x] |x. CHR ''e'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 7:"{[x] |x. CHR ''f'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 8:"{[x] |x. CHR ''g'' = x} : range lang"
+    using t1 by fastforce  
+  moreover have 9:"{[x] |x. CHR ''h'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 10:"{[x] |x. CHR ''i'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 11:"{[x] |x. CHR ''j'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 12:"{[x] |x. CHR ''k'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 13:"{[x] |x. CHR ''l'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 14:"{[x] |x. CHR ''m'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 15:"{[x] |x. CHR ''n'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 16:"{[x] |x. CHR ''o'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 17:"{[x] |x. CHR ''p'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 18:"{[x] |x. CHR ''q'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 19:"{[x] |x. CHR ''r'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 20:"{[x] |x. CHR ''s'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 21:"{[x] |x. CHR ''t'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 22:"{[x] |x. CHR ''u'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 23:"{[x] |x. CHR ''v'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 24:"{[x] |x. CHR ''w'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 25:"{[x] |x. CHR ''x'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 26:"{[x] |x. CHR ''y'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 27:"{[x] |x. CHR ''z'' = x} : range lang"
+    using t1 by fastforce
+  have "{[x] |x. CHR ''a'' = x}  \<union> {[x] |x. CHR ''b'' = x} \<union> {[x] |x. CHR ''c'' = x} \<union> {[x] |x. CHR ''d'' = x} \<union> {[x] |x. CHR ''e'' = x}  \<union> {[x] |x. CHR ''f'' = x} \<union> {[x] |x. CHR ''g'' = x}  \<union> 
+           {[x] |x. CHR ''h'' = x} \<union> {[x] |x. CHR ''i'' = x}  \<union> {[x] |x. CHR ''j'' = x} \<union> {[x] |x. CHR ''k'' = x} \<union> {[x] |x. CHR ''l'' = x}  \<union> {[x] |x. CHR ''m'' = x} \<union> {[x] |x. CHR ''n'' = x}  \<union> 
+           {[x] |x. CHR ''o'' = x} \<union> {[x] |x. CHR ''p'' = x}  \<union> {[x] |x. CHR ''q'' = x} \<union> {[x] |x. CHR ''r'' = x} \<union> {[x] |x. CHR ''s'' = x}  \<union> {[x] |x. CHR ''t'' = x} \<union> {[x] |x. CHR ''u'' = x}  \<union> 
+           {[x] |x. CHR ''v'' = x} \<union> {[x] |x. CHR ''w'' = x}  \<union> {[x] |x. CHR ''x'' = x} \<union> {[x] |x. CHR ''y'' = x} \<union> {[x] |x. CHR ''z'' = x} \<in> range lang"
+    using 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 lang.simps(4)
+    apply (simp  add: image_iff plus_set_def rangeI)  
+    by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) insert_is_Un plus_set_def)
+  then show " {[x] |x.
+     CHR ''a'' = x \<or>
+     CHR ''b'' = x \<or>
+     CHR ''c'' = x \<or>
+     CHR ''d'' = x \<or>
+     CHR ''e'' = x \<or>
+     CHR ''f'' = x \<or>
+     CHR ''g'' = x \<or>
+     CHR ''h'' = x \<or>
+     CHR ''i'' = x \<or>
+     CHR ''j'' = x \<or>
+     CHR ''k'' = x \<or>
+     CHR ''l'' = x \<or>
+     CHR ''m'' = x \<or>
+     CHR ''n'' = x \<or>
+     CHR ''o'' = x \<or> CHR ''p'' = x \<or> CHR ''q'' = x \<or> CHR ''r'' = x \<or> CHR ''s'' = x \<or> CHR ''t'' = x \<or> CHR ''u'' = x \<or> CHR ''v'' = x \<or> CHR ''w'' = x \<or> CHR ''x'' = x \<or> CHR ''y'' = x \<or> CHR ''z'' = x}
+    \<in> range Symbolic_Regular_Algebra_Model.lang"
+    using c1 apply auto done
+qed
+
+
+lemma alp_lem_uc:"{[x] |x. denote_ba uc x} \<in> range Symbolic_Regular_Algebra_Model.lang"
+  apply(simp add:uc_def)
+proof -
+  have c1:"{[x] |x. CHR ''A'' = x}  \<union> {[x] |x. CHR ''B'' = x} \<union> {[x] |x. CHR ''C'' = x} \<union> {[x] |x. CHR ''D'' = x} \<union> {[x] |x. CHR ''E'' = x}  \<union> {[x] |x. CHR ''F'' = x} \<union> {[x] |x. CHR ''G'' = x}  \<union> 
+           {[x] |x. CHR ''H'' = x} \<union> {[x] |x. CHR ''I'' = x}  \<union> {[x] |x. CHR ''J'' = x} \<union> {[x] |x. CHR ''K'' = x} \<union> {[x] |x. CHR ''L'' = x}  \<union> {[x] |x. CHR ''M'' = x} \<union> {[x] |x. CHR ''N'' = x}  \<union> 
+           {[x] |x. CHR ''O'' = x} \<union> {[x] |x. CHR ''P'' = x}  \<union> {[x] |x. CHR ''Q'' = x} \<union> {[x] |x. CHR ''R'' = x} \<union> {[x] |x. CHR ''S'' = x}  \<union> {[x] |x. CHR ''T'' = x} \<union> {[x] |x. CHR ''U'' = x}  \<union> 
+           {[x] |x. CHR ''V'' = x} \<union> {[x] |x. CHR ''W'' = x}  \<union> {[x] |x. CHR ''X'' = x} \<union> {[x] |x. CHR ''Y'' = x} \<union> {[x] |x. CHR ''Z'' = x} 
+      =  {[x] |x.
+     CHR ''A'' = x \<or>
+     CHR ''B'' = x \<or>
+     CHR ''C'' = x \<or>
+     CHR ''D'' = x \<or>
+     CHR ''E'' = x \<or>
+     CHR ''F'' = x \<or>
+     CHR ''G'' = x \<or>
+     CHR ''H'' = x \<or>
+     CHR ''I'' = x \<or>
+     CHR ''J'' = x \<or>
+     CHR ''K'' = x \<or>
+     CHR ''L'' = x \<or>
+     CHR ''M'' = x \<or>
+     CHR ''N'' = x \<or>
+     CHR ''O'' = x \<or> CHR ''P'' = x \<or> CHR ''Q'' = x \<or> CHR ''R'' = x \<or> CHR ''S'' = x \<or> CHR ''T'' = x \<or> CHR ''U'' = x \<or> CHR ''V'' = x \<or> CHR ''W'' = x \<or> CHR ''X'' = x \<or> CHR ''Y'' = x \<or> CHR ''Z'' = x}"
+    by fastforce 
+  have 2:"{[x] |x. CHR ''A'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 3: "{[x] |x. CHR ''B'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 4:"{[x] |x. CHR ''C'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 5:"{[x] |x. CHR ''D'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 6:"{[x] |x. CHR ''E'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 7:"{[x] |x. CHR ''F'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 8:"{[x] |x. CHR ''G'' = x} : range lang"
+    using t1 by fastforce  
+  moreover have 9:"{[x] |x. CHR ''H'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 10:"{[x] |x. CHR ''I'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 11:"{[x] |x. CHR ''J'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 12:"{[x] |x. CHR ''K'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 13:"{[x] |x. CHR ''L'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 14:"{[x] |x. CHR ''M'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 15:"{[x] |x. CHR ''N'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 16:"{[x] |x. CHR ''O'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 17:"{[x] |x. CHR ''P'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 18:"{[x] |x. CHR ''Q'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 19:"{[x] |x. CHR ''R'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 20:"{[x] |x. CHR ''S'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 21:"{[x] |x. CHR ''T'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 22:"{[x] |x. CHR ''U'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 23:"{[x] |x. CHR ''V'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 24:"{[x] |x. CHR ''W'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 25:"{[x] |x. CHR ''X'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 26:"{[x] |x. CHR ''Y'' = x} : range lang"
+    using t1 by fastforce
+  moreover have 27:"{[x] |x. CHR ''Z'' = x} : range lang"
+    using t1 by fastforce
+  have "{[x] |x. CHR ''A'' = x}  \<union> {[x] |x. CHR ''B'' = x} \<union> {[x] |x. CHR ''C'' = x} \<union> {[x] |x. CHR ''D'' = x} \<union> {[x] |x. CHR ''E'' = x}  \<union> {[x] |x. CHR ''F'' = x} \<union> {[x] |x. CHR ''G'' = x}  \<union> 
+           {[x] |x. CHR ''H'' = x} \<union> {[x] |x. CHR ''I'' = x}  \<union> {[x] |x. CHR ''J'' = x} \<union> {[x] |x. CHR ''K'' = x} \<union> {[x] |x. CHR ''L'' = x}  \<union> {[x] |x. CHR ''M'' = x} \<union> {[x] |x. CHR ''N'' = x}  \<union> 
+           {[x] |x. CHR ''O'' = x} \<union> {[x] |x. CHR ''P'' = x}  \<union> {[x] |x. CHR ''Q'' = x} \<union> {[x] |x. CHR ''R'' = x} \<union> {[x] |x. CHR ''S'' = x}  \<union> {[x] |x. CHR ''T'' = x} \<union> {[x] |x. CHR ''U'' = x}  \<union> 
+           {[x] |x. CHR ''V'' = x} \<union> {[x] |x. CHR ''W'' = x}  \<union> {[x] |x. CHR ''X'' = x} \<union> {[x] |x. CHR ''Y'' = x} \<union> {[x] |x. CHR ''Z'' = x} \<in> range lang"
+    using 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 lang.simps(4)
+    apply (simp  add: image_iff plus_set_def rangeI)  
+    by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) insert_is_Un plus_set_def)
+  then show "  {[x] |x.
+     CHR ''A'' = x \<or>
+     CHR ''B'' = x \<or>
+     CHR ''C'' = x \<or>
+     CHR ''D'' = x \<or>
+     CHR ''E'' = x \<or>
+     CHR ''F'' = x \<or>
+     CHR ''G'' = x \<or>
+     CHR ''H'' = x \<or>
+     CHR ''I'' = x \<or>
+     CHR ''J'' = x \<or>
+     CHR ''K'' = x \<or>
+     CHR ''L'' = x \<or>
+     CHR ''M'' = x \<or>
+     CHR ''N'' = x \<or>
+     CHR ''O'' = x \<or> CHR ''P'' = x \<or> CHR ''Q'' = x \<or> CHR ''R'' = x \<or> CHR ''S'' = x \<or> CHR ''T'' = x \<or> CHR ''U'' = x \<or> CHR ''V'' = x \<or> CHR ''W'' = x \<or> CHR ''X'' = x \<or> CHR ''Y'' = x \<or> CHR ''Z'' = x}
+    \<in> range Symbolic_Regular_Algebra_Model.lang"
+    using c1 apply auto done
+qed
+instantiation reg_lan ::  Ar_algebra
 begin
 
-  lift_definition alp_reg_lan :: "char reg_lan set"
+  lift_definition alp_reg_lan :: "reg_lan set"
   is alpset
-    apply(simp add:alpse_def)
-     apply transfer nitpick
+    apply(simp add:alpset_def)
+    apply transfer  
+    apply(erule disjE)
+     apply (simp add: alp_lem_digit)
+    apply(erule disjE)
+     apply (simp add: alp_lem_lc)
+    apply(simp add:alp_lem_uc)
+    done
 
 instance proof
   fix x :: "reg_lan"
@@ -672,19 +926,20 @@ next
   fix p :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> 1 \<^bsup>& p = 0"
     apply transfer
-    apply (simp add: alpset1_def)
-    by (metis Groups.add_ac(2) Un_insert_right insert_iff lan_antimirow_l.dual.EWP neq_Nil_conv one_list_def one_set_def plus_set_def singletonD)
+    apply (simp add: alpset_def) 
+    apply (simp add: inter_set_def one_list_def one_set_def zero_set_def)
+    by blast
 next
   fix p q a b  :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> p \<cdot> a \<^bsup>& (q \<cdot> b) = p \<^bsup>& q \<cdot> (a \<^bsup>& b)"
     apply transfer
-    apply(simp add:alpset1_def c_prod_def inter_set_def times_list_def)
-    by auto
+    apply(simp add:alpset_def c_prod_def inter_set_def times_list_def)  
+    by (smt (verit) Collect_cong append_Cons append_self_conv2 list.inject mem_Collect_eq) 
 next 
   fix p q a b  :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
     apply transfer
-    apply(simp add:alpset1_def c_prod_def inter_set_def times_list_def)
+    apply(simp add:alpset_def c_prod_def inter_set_def times_list_def)
     by fastforce
 qed
 end
@@ -710,13 +965,13 @@ theorem arden_regexp_l:
   shows "x \<sim> y\<^sup>\<star>\<^sub>r \<cdot>\<^sub>r z"
   using assms
   apply transfer
-  by (metis Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.lang.simps(7) Symbolic_Regular_Algebra_Model.rexp.distinct(2) alpset_def arden_l insertE neq_Nil_conv rexp_ewp_l_ewp singletonD)
+  by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.rexp.distinct(2) arden_l rexp_ewp_l_ewp)
 
 theorem arden_regexp_r: 
   assumes "ro(y) = 0\<^sub>r" "x \<sim> x \<cdot>\<^sub>r y +\<^sub>r z" 
   shows "x \<sim> z \<cdot>\<^sub>r y\<^sup>\<star>\<^sub>r"
   using assms
   apply transfer
-  by (metis Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.lang.simps(7) Symbolic_Regular_Algebra_Model.rexp.distinct(2) alpset_def arden_r insertE neq_Nil_conv rexp_ewp_l_ewp singletonD)
-
+  by (metis Symbolic_Regular_Algebra_Model.lang.simps(4) Symbolic_Regular_Algebra_Model.lang.simps(5) Symbolic_Regular_Algebra_Model.lang.simps(6) Symbolic_Regular_Algebra_Model.rexp.distinct(2) arden_r rexp_ewp_l_ewp)
+ 
 end
