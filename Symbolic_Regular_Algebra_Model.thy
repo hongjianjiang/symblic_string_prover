@@ -413,6 +413,27 @@ next
        q \<in> Symbolic_Regular_Algebra_Model.lang ` {Pred digit, Pred uc, Pred lc} \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
     apply(simp add:c_prod_def inter_set_def times_list_def) apply auto
     done
+  show "p \<in> Symbolic_Regular_Algebra_Model.lang ` {Pred digit, Pred uc, Pred lc} \<Longrightarrow>
+           q \<in> Symbolic_Regular_Algebra_Model.lang ` {Pred digit, Pred uc, Pred lc} \<Longrightarrow>
+           p \<noteq> q \<Longrightarrow> p \<^bsup>& q = 0"
+    apply(simp add:c_prod_def inter_set_def times_list_def zero_set_def)
+    apply(erule disjE)
+     apply(erule disjE)
+      apply simp
+     apply (erule disjE)
+    subgoal
+      apply(simp add:digit_def uc_def)
+      by blast
+    subgoal
+      apply(simp add:digit_def lc_def)
+      by blast
+    apply(erule disjE)
+     apply(erule disjE)
+      apply(simp add:digit_def uc_def)
+      apply blast
+      apply(simp add:digit_def lc_def)
+     apply blast 
+    sorry
 qed
 
 interpretation lan_antimirow_r: Ar_algebra"(+)" "1 :: char lan" "(\<cdot>)" "(\<^bsup>&)" "0"   "(\<subseteq>)" "(\<subset>)" "star" "lang ` {Pred digit, Pred uc, Pred lc}" 
@@ -934,13 +955,17 @@ next
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> p \<cdot> a \<^bsup>& (q \<cdot> b) = p \<^bsup>& q \<cdot> (a \<^bsup>& b)"
     apply transfer
     apply(simp add:alpset_def c_prod_def inter_set_def times_list_def)  
-    by (smt (verit) Collect_cong append_Cons append_self_conv2 list.inject mem_Collect_eq) 
+      sorry
 next 
   fix p q a b  :: "reg_lan"
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> a \<cdot> p \<^bsup>& (b \<cdot> q) = a \<^bsup>& b \<cdot> (p \<^bsup>& q)"
     apply transfer
     apply(simp add:alpset_def c_prod_def inter_set_def times_list_def)
     by fastforce
+next 
+  fix p q :: "reg_lan"
+  show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> p \<noteq> q \<Longrightarrow> p \<^bsup>& q = 0 "
+    sorry
 qed
 end
 

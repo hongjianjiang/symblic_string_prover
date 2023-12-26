@@ -40,6 +40,8 @@ class antimirow_base = star_dioid + ab_inter_semilattice_zero_one +
   assumes A16: "\<lbrakk>p \<in> \<bbbP>\<rbrakk> \<Longrightarrow> 1 \<^bsup>& p = 0"
   assumes A17: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (p \<cdot> a) \<^bsup>& (q \<cdot> b)  = (p \<^bsup>& q) \<cdot> (a \<^bsup>& b)"
   assumes A18: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> p) \<^bsup>& (b \<cdot> q)  = (a \<^bsup>& b) \<cdot> (p \<^bsup>& q)"
+  assumes A19: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>; p \<noteq> q\<rbrakk> \<Longrightarrow> p \<^bsup>& q = 0"
+
 
 class Al_algebra = antimirow_base +
   assumes S12l: "1 + x \<cdot> x\<^sup>\<star> = x\<^sup>\<star>"
@@ -112,6 +114,8 @@ proof
     by (simp add: local.A18 local.opp_mult_def)
   show "p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> a \<odot> p \<^bsup>& (b \<odot> q) = a \<^bsup>& b \<odot> (p \<^bsup>& q)"
     by (simp add: local.A17 local.opp_mult_def)
+  show " p \<in> \<bbbP> \<Longrightarrow> q \<in> \<bbbP> \<Longrightarrow> p \<noteq> q \<Longrightarrow> p \<^bsup>& q = 0 "
+    by (simp add: local.A19)
 qed
 
 context Al_algebra
