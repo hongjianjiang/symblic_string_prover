@@ -69,7 +69,7 @@ definition "uc = string_to_characterClass ''ABCDEFGHIJKLMNOPQRSTUVWXYZ''"
 
 definition "anys = Pred Top"
 
-fun regexp_compl ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" where 
+fun regexp_compl ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> bool" where 
   "regexp_compl r1 r2 = (UNIV - lang r1 = lang r2)"
 
 fun regexp_empty ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" where 

@@ -5,110 +5,112 @@ theory Sequent
   imports Symbolic_Regular_Algebra_Model "HOL-Library.Multiset"
 begin
 
-section \<open>Terms and 'u formulae\<close>
+section \<open>Terms and formulae\<close>
 
 text \<open>
-\label{sec:terms} The datatypes of terms and 'u formulae are defined as follows:
+\label{sec:terms} The datatypes of terms and formulae are defined as follows:
 \<close>
 type_synonym var_sym = string
 type_synonym fun_sym = string
 type_synonym pred_sym = string
-type_synonym 'u var_denot = \<open>var_sym \<Rightarrow> 'u\<close>
+type_synonym var_denot = \<open>nat \<Rightarrow> var_sym\<close>
 type_synonym 'u fun_denot = \<open>fun_sym \<Rightarrow> 'u list \<Rightarrow> 'u\<close>
 type_synonym 'u pred_denot = \<open>pred_sym \<Rightarrow> 'u list \<Rightarrow> bool\<close>
 
-datatype fterm = Var var_sym | Fun fun_sym \<open>var_sym list\<close>
+datatype (params_tm: 'f) tm  = Var nat | Fun 'f \<open>nat list\<close>
 
-fun evalt ::"'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> fterm \<Rightarrow> 'u" where 
-  "evalt E F (Var x) = E x"
-| "evalt E F (Fun f ts) = (F f (map E ts))"
+primrec semantics_tm :: "(nat \<Rightarrow> string) \<Rightarrow> ('f \<Rightarrow> string list \<Rightarrow> string) \<Rightarrow> 'f tm \<Rightarrow> string" (\<open>\<lparr>_, _\<rparr>\<close>) where
+  \<open>\<lparr>E, F\<rparr> (Var n) = E n\<close>
+| \<open>\<lparr>E, F\<rparr> (Fun f ts) = F f (map E ts)\<close>
 
-abbreviation evalts :: "'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> fterm list \<Rightarrow> 'u list" where 
-"evalts E F ts \<equiv> map (evalt E F) ts"
-
-datatype 'u form = 
-    EqAtom "fterm" "fterm"                      
-  | NeqAtom "fterm" "fterm" 
-  | Member "fterm" "'u rexp"
-  | Nmember "fterm" "'u rexp"
-  | Dis "'u form" "'u form"                     
-  | Con "'u form" "'u form"                      
-  | Neg "'u form"     
+datatype 'f form = 
+    EqAtom "'f tm" "'f tm"
+  | NEqAtom "'f tm" "'f tm"
+  | ConcEq "'f tm" "'f tm" "'f tm"
+  | Member "'f tm" "char BA rexp"
+  | NMember "'f tm" "char BA rexp"
+  | Dis "'f form" "'f form"                     
+  | Con "'f form" "'f form"                      
+  | Neg "'f form"     
   | FF
 
 
-primrec eval :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow> 'u BA form \<Rightarrow> bool\<close> where
-  "eval e f (EqAtom x y) = (evalt e f x = evalt e f y)" 
-| "eval e f (NeqAtom x y) = (evalt e f x \<noteq> evalt e f y)" 
-| "eval e f (Member x r) = ([evalt e f x] \<in> lang r)"
-| "eval e f (Nmember x r) = ([evalt e f x] \<in> (UNIV - lang r))"
-| "eval e f (Dis m n) = (eval e f m \<or> eval e f n)"
-| "eval e f (Con m n) = (eval e f m \<and> eval e f n)"
-| "eval e f (Neg m) = (\<not> eval e f m)"
-| "eval e f FF = False"
+primrec semantics_fm (\<open>\<lbrakk>_, _\<rbrakk>\<close>) where
+  \<open>\<lbrakk>E, F\<rbrakk> (EqAtom x y) = (\<lparr>E, F\<rparr> x = \<lparr>E, F\<rparr> y)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (NEqAtom x y) = (\<lparr>E, F\<rparr> x \<noteq> \<lparr>E, F\<rparr> y)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (ConcEq z x y) = (\<lparr>E, F\<rparr> z = \<lparr>E, F\<rparr> x @ \<lparr>E, F\<rparr> y)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (Member x r) = (\<lparr>E, F\<rparr> x \<in> lang r)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (NMember x r) = (\<lparr>E, F\<rparr> x \<notin> lang r)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (Dis x y) = (\<lbrakk>E, F\<rbrakk> x \<or> \<lbrakk>E, F\<rbrakk> y)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (Con x y) = (\<lbrakk>E, F\<rbrakk> x \<and> \<lbrakk>E, F\<rbrakk> y)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (Neg x) = (\<not> \<lbrakk>E, F\<rbrakk> x)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (FF) = False\<close> 
 
-definition model :: \<open>'u var_denot \<Rightarrow> 'u fun_denot \<Rightarrow>  'u BA form list \<Rightarrow> 'u BA form \<Rightarrow> bool\<close> ("_,_,_ \<Turnstile> _" [50,50] 50) where
-  \<open>(e,f,ps \<Turnstile> p) = (list_all (eval e f) ps \<longrightarrow> eval e f p)\<close>
+definition model :: \<open>(nat \<Rightarrow> char list) \<Rightarrow> ('f \<Rightarrow> char list list \<Rightarrow> char list) \<Rightarrow> 'f form list \<Rightarrow> 'f form \<Rightarrow> bool\<close> ("_,_,_ \<Turnstile> _" [50,50] 50) where
+  \<open>(E,F,ps \<Turnstile> p) = (list_all \<lbrakk>E,F\<rbrakk> ps \<longrightarrow> \<lbrakk>E, F\<rbrakk> p)\<close>
 
-fun pre_image_conc ::"'u BA rexp \<Rightarrow> ('u BA rexp * 'u BA rexp) set" where 
+fun pre_image_conc ::"char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where 
   "pre_image_conc r = {(a,b)| a b. lang r = (lang (Times a b))}"
 
-fun empty_intersection_set :: "'u BA rexp list \<Rightarrow> bool" where
+fun empty_intersection_set :: "char BA rexp list \<Rightarrow> bool" where
   "empty_intersection_set fs = (\<Inter>(lang ` set fs) = {} \<and> length fs > 1 )"
 
-fun subset_intersect_set :: "'u BA rexp \<Rightarrow> 'u BA rexp set \<Rightarrow> bool" where 
-  "subset_intersect_set r fs = (\<Inter>(lang ` fs) \<subseteq> lang r)"
+fun subset_intersect_set :: "char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where 
+  "subset_intersect_set r fs = (\<Inter>(lang ` set fs) \<subseteq> lang r)"
 
-fun eq_len_intersect :: "'u BA rexp \<Rightarrow> 'u BA rexp list \<Rightarrow> bool" where 
+fun eq_len_intersect :: "char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where 
   "eq_len_intersect r fs = (\<Inter>(lang ` set fs) = lang r \<and> length fs > 1)"
 
-fun member_var_rexp :: "string list\<Rightarrow> 'u rexp list \<Rightarrow> 'u form set" where 
-"member_var_rexp [] b = {}"|
-"member_var_rexp (v # va) [] = {}"|
-"member_var_rexp (x#xs) (y#ys) = (if (length xs = length ys) then insert (Member (Var x) (y)) (member_var_rexp xs (ys)) else {})"
+fun member_var_rexp :: "nat list \<Rightarrow> char BA rexp list \<Rightarrow> string form list" where 
+"member_var_rexp [] b = []"|
+"member_var_rexp (v # va) [] = []"|
+"member_var_rexp (x#xs) (y#ys) = (if (length xs = length ys) then (Member (Var x) y) # (member_var_rexp xs ys) else [])"
 
-fun con_fwd_prop ::"string \<Rightarrow> 'u BA rexp \<Rightarrow> 'u BA rexp list \<Rightarrow> bool" where
+fun con_fwd_prop ::"string \<Rightarrow> char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where
 "con_fwd_prop f r es = (if f = ''concat'' then lang (r) = List.foldl (*) (lang (hd es)) (map lang (tl es)) else False)"
 
-fun con_fwd_prop_elim ::"string \<Rightarrow> 'u BA rexp \<Rightarrow> 'u BA rexp list \<Rightarrow> bool" where
+fun con_fwd_prop_elim ::"string \<Rightarrow> char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where
 "con_fwd_prop_elim f r es = (if f = ''concat'' then lang (r) = List.foldl (*) (lang (hd es)) (map lang (tl es)) \<and> is_singleton (lang r) else False)"
 
-fun con_bwd_prop ::"string \<Rightarrow> 'u BA rexp \<Rightarrow> ('u BA rexp * 'u BA rexp) set" where
+fun con_bwd_prop ::"string \<Rightarrow> char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where
 "con_bwd_prop f r = (if f = ''concat'' then pre_image_conc r else {})"
 
-value "\<Union>{{1}, {2::nat},{4}}"
+inductive One_SC :: \<open>string form list \<Rightarrow> bool\<close> (\<open>\<turnstile> _\<close> 0) where
+  AlphaCon:      \<open>\<turnstile> A#B#\<Gamma> \<Longrightarrow> \<turnstile> Con A B#\<Gamma>\<close>
+| AlphaNegOr:    \<open>\<turnstile> Neg A #Neg B#\<Gamma> \<Longrightarrow> \<turnstile> Neg (Dis A B)# \<Gamma>\<close>
+| AlphaOr:       \<open>\<turnstile> A# \<Gamma> \<Longrightarrow> \<turnstile> B # \<Gamma> \<Longrightarrow> \<turnstile> Dis A B # \<Gamma>\<close>
+| AlphaNegAnd:   \<open>\<turnstile> Neg A # \<Gamma> \<Longrightarrow>  \<turnstile> Neg B # \<Gamma> \<Longrightarrow> \<turnstile> Neg (Con A B) # \<Gamma>\<close>
+| AlphaNegNeg:   \<open>\<turnstile> A# \<Gamma> \<Longrightarrow> \<turnstile> Neg (Neg A) # \<Gamma>\<close>
+| NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> (Member x ec) # \<Gamma> \<Longrightarrow> \<turnstile> (NMember x e) # \<Gamma>\<close>
+| NotEq:         \<open>\<turnstile> EqAtom x y # (EqAtom y (Fun f fs) # \<Gamma>) \<Longrightarrow> \<turnstile> EqAtom x (Fun f fs)# \<Gamma>\<close>
+| Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> Member x e # \<Gamma> \<Longrightarrow> \<turnstile> Member x ec # \<Gamma> \<Longrightarrow>  \<turnstile> \<Gamma>\<close>
+| EqProp:        \<open>\<turnstile> Member x e # EqAtom x y # Member y e # \<Gamma> \<Longrightarrow> \<turnstile> Member x e # EqAtom x y # \<Gamma>\<close>
+| NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<turnstile> Member x e1 # Member y e2 # \<Gamma> \<Longrightarrow> \<turnstile> Member x e1 # NEqAtom x y # Member y e2 # \<Gamma>\<close>
+| EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<turnstile> Member x e # Member y e # \<Gamma>\<Longrightarrow> \<turnstile> Member x e # (EqAtom x y) # \<Gamma>\<close>
+| NeqPropElim:   \<open>is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow> \<turnstile> (Member x e) # (Member y ec) # \<Gamma> \<Longrightarrow>  
+                 \<turnstile> (Member x e) # (NEqAtom x y) # \<Gamma>\<close>
+| Close:         \<open>empty_intersection_set fs \<Longrightarrow> \<turnstile> [FF] \<Longrightarrow> \<turnstile> ((map (\<lambda>r. Member x r) fs)) @ \<Gamma>\<close> 
+| Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<turnstile> (map (\<lambda>r. Member x r) fs) @ \<Gamma> \<Longrightarrow> \<turnstile> Member x e # (map (\<lambda>r. Member x r) fs) @ \<Gamma>\<close> 
+| Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<turnstile> Member x e # \<Gamma>  \<Longrightarrow>  \<turnstile> (map (\<lambda>r. Member x r) (fs)) @ \<Gamma>\<close> 
+| Order:         \<open>\<turnstile> G \<Longrightarrow> set G = set G' \<Longrightarrow> \<turnstile> G'\<close> 
+| Fwd_PropConc:  \<open>con_fwd_prop f e es \<Longrightarrow> \<turnstile> (Member x e)#(EqAtom x (Fun f xs))#(member_var_rexp xs es) @ \<Gamma> 
+                 \<Longrightarrow> \<turnstile> (EqAtom x (Fun f xs))#(member_var_rexp xs es) @ \<Gamma>\<close>  
+| Fwd_ElimConc:  \<open>con_fwd_prop_elim f e es \<Longrightarrow> \<turnstile> Member x e # EqAtom x (Fun f xs)# member_var_rexp xs es  @ \<Gamma> \<Longrightarrow>  
+                 \<turnstile> (EqAtom x (Fun f xs)# member_var_rexp xs es) @ \<Gamma>\<close>(*
+| Bwd_PropConc:  \<open>con_bwd_prop f e = es \<Longrightarrow> \<turnstile> ((\<lambda>r. Member (Var (hd xs)) (fst r)# Member (Var (hd (tl xs))) (snd r)# Member x e # EqAtom x (Fun f xs) # \<Gamma>) ` es) \<Longrightarrow> 
+                 \<turnstile> Member x e # EqAtom x (Fun f xs)# \<Gamma>\<close>*)
 
-abbreviation msins ("_, _" [56,56] 56) where "x,M == insert x M"
 
-inductive One_SC :: \<open>'u BA form set set \<Rightarrow> bool\<close> (\<open>\<turnstile> _\<close> 0) where
-  AlphaCon:      \<open>\<turnstile> {A,B,\<Gamma>} \<Longrightarrow> \<turnstile> {Con A B,\<Gamma>}\<close>
-| AlphaNegOr:    \<open>\<turnstile> {Neg A, Neg B, \<Gamma>} \<Longrightarrow> \<turnstile> {Neg (Dis A B), \<Gamma>}\<close>
-| AlphaOr:       \<open>\<turnstile> {A , \<Gamma>} \<Longrightarrow> \<turnstile> {B , \<Gamma>} \<Longrightarrow> \<turnstile> {Dis A B , \<Gamma>}\<close>
-| AlphaNegAnd:   \<open>\<turnstile> {Neg A , \<Gamma>} \<Longrightarrow>  \<turnstile> {Neg B , \<Gamma>} \<Longrightarrow> \<turnstile> {Neg (Con A B) , \<Gamma>}\<close>
-| AlphaNegNeg:   \<open>\<turnstile> {A, \<Gamma>} \<Longrightarrow> \<turnstile> {Neg (Neg A) , \<Gamma>}\<close>
-| NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> {(Member x ec) , \<Gamma>} \<Longrightarrow> \<turnstile> {(Nmember x e) , \<Gamma>}\<close>
-| NotEq:         \<open>\<turnstile> {EqAtom x y , (EqAtom y (Fun f fs) , \<Gamma>)} \<Longrightarrow> \<turnstile> {EqAtom x (Fun f fs), \<Gamma>}\<close>
-| Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<turnstile> {Member x e , \<Gamma>} \<Longrightarrow> \<turnstile> {Member x ec , \<Gamma>} \<Longrightarrow>  \<turnstile> {\<Gamma>}\<close>
-| EqProp:        \<open>\<turnstile> {Member x e , EqAtom x y , Member y e , \<Gamma>} \<Longrightarrow> \<turnstile> {Member x e , EqAtom x y , \<Gamma>}\<close>
-| NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<turnstile> {Member x e1 , Member y e2 , \<Gamma>} \<Longrightarrow> \<turnstile> {Member x e1 , NeqAtom x y , Member y e2 , \<Gamma>}\<close>
-| EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<turnstile> {Member (Var x) e , Member (Var y) e , \<Gamma>} \<Longrightarrow> \<turnstile> {Member (Var x) e , (EqAtom (Var x) (Var y)) , \<Gamma>}\<close>
-| NeqPropElim:   \<open>is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow> \<turnstile> {(Member (Var x) e) , (Member (Var y) ec) , \<Gamma>} \<Longrightarrow>  
-                 \<turnstile> {(Member (Var x) e) , (NeqAtom (Var x) (Var y)) , \<Gamma>}\<close>
-| Close:         \<open>empty_intersection_set fs \<Longrightarrow> \<turnstile> {{FF}} \<Longrightarrow> \<turnstile> {((\<lambda>r. Member (Var x) r) ` set fs) \<union> \<Gamma>}\<close>
-| Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<turnstile> {((\<lambda>r. Member x r) ` fs) \<union> \<Gamma>} \<Longrightarrow> \<turnstile> {Member x e , ((\<lambda>r. Member x r) ` fs) \<union> \<Gamma>}\<close>
-| Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<turnstile> {Member (Var x) e , \<Gamma>}  \<Longrightarrow>  \<turnstile> {((\<lambda>r. Member (Var x) r) ` (set fs)) \<union> \<Gamma>}\<close>
-| Fwd_PropConc:  \<open>con_fwd_prop f e es \<Longrightarrow> \<turnstile> {(Member (Var x) e, (EqAtom (Var x) (Fun f xs), member_var_rexp xs es)) \<union> \<Gamma>} \<Longrightarrow> 
-                 \<turnstile> {EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma>}\<close>
-| Fwd_ElimConc:  \<open>con_fwd_prop_elim f e es \<Longrightarrow> \<turnstile> {Member (Var x) e , EqAtom (Var x) (Fun f xs), member_var_rexp xs es \<union> \<Gamma>} \<Longrightarrow>  
-                 \<turnstile> {(EqAtom (Var x) (Fun f xs), member_var_rexp xs es) \<union> \<Gamma>}\<close>
-| Bwd_PropConc:  \<open>con_bwd_prop f e = es \<Longrightarrow> \<turnstile> ((\<lambda>r. Member (Var (hd xs)) (fst r), Member (Var (hd (tl xs))) (snd r), Member (Var x) e, EqAtom (Var x) (Fun f xs), \<Gamma>) ` es) \<Longrightarrow> 
-                 \<turnstile> {Member (Var x) e , EqAtom (Var x) (Fun f xs), \<Gamma>}\<close>
-
+lemma "False \<or> True \<Longrightarrow> True"
+  apply (erule disjE)
+   apply simp
+  apply simp
+  done
 
 subsection \<open>Soundness\<close>
 
-lemma SC_soundness: \<open>\<turnstile> \<Gamma>S \<Longrightarrow> \<exists>\<Gamma>\<in> \<Gamma>S. \<forall>p \<in> \<Gamma>. eval e f p\<close>
-proof (induct \<Gamma>S rule: One_SC.induct)
+lemma SC_soundness: \<open>\<turnstile> \<Gamma> \<Longrightarrow> \<forall>p\<in> set \<Gamma>. \<lbrakk>E, F\<rbrakk> p\<close>
+proof (induct \<Gamma> rule: One_SC.induct)
   case (AlphaCon A B \<Gamma>)
   then show ?case by auto
 next
@@ -140,18 +142,18 @@ next
   then show ?case by auto
 next
   case (EqPropElim e x y \<Gamma>)
-  then show ?case apply auto 
-    by (metis is_singletonE list.inject singletonD) 
+  then show ?case apply simp 
+    by (metis is_singletonE singletonD)
 next
   case (NeqPropElim e ec x y \<Gamma> )
   then show ?case by auto
 next
   case (Close fs x \<Gamma>)
-  then show ?case apply simp  done
+  then show ?case by simp
 next
   case (Subsume e fs x \<Gamma>)
-  then show ?case apply auto 
-    by (smt (verit) INT_I Un_iff eval.simps(3) image_iff subsetD) 
+  then show ?case apply auto
+    by (metis (no_types, opaque_lifting) INT_iff Un_iff image_eqI in_mono semantics_fm.simps(4))
 next
   case (Intersect e fs x \<Gamma>)
   then show ?case apply auto 
@@ -160,6 +162,9 @@ next
   case (Fwd_PropConc fa ea es x xs \<Gamma>)
   then show ?case by auto
 next 
+  case (Order G G')
+  then show ?case by auto
+next
   case (Fwd_ElimConc fa ea es x xs \<Gamma>)
   then show ?case by auto
 next 
@@ -171,8 +176,8 @@ qed
 subsection \<open>Completeness\<close>
 
 theorem SC_completeness:
-  assumes \<open>\<exists>\<Gamma>\<in> \<Gamma>S. \<forall>p \<in> \<Gamma>. eval e f p\<close>
-  shows \<open>\<turnstile> \<Gamma>S\<close>
+  assumes \<open>\<forall>p\<in> set G. eval e f p\<close>
+  shows \<open>\<turnstile> G\<close>
   sorry
 
 end
