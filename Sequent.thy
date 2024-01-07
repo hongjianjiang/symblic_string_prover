@@ -162,33 +162,6 @@ subsection \<open>Soundness\<close>
 
 lemma SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<forall>p \<in> set G.  \<lbrakk>E, concat_str\<rbrakk> p)\<close>
 proof (induct G rule: One_SC.induct)
-  case (AlphaCon A B \<Gamma>) 
-  then show ?case apply auto done
-next
-  case (AlphaNegOr A B \<Gamma>)
-  then show ?case apply auto done
-next
-  case (AlphaOr A \<Gamma> B)
-  then show ?case apply auto done
-next
-  case (AlphaNegAnd A \<Gamma> B)
-  then show ?case apply auto done
-next
-  case (AlphaNegNeg A \<Gamma>)
-  then show ?case apply auto done
-next
-  case (NotMember e ec x \<Gamma>)
-  then show ?case apply auto done
-next
-  case (NotEq x y \<Gamma> z)
-  then show ?case apply auto done
-next
-  case (Cut e ec x \<Gamma>)
-  then show ?case apply auto done
-next
-  case (EqProp x e y \<Gamma>)
-  then show ?case apply auto done
-next
   case (NeqSubsume e1 e2 x y \<Gamma>)
   then show ?case apply auto done
 next
@@ -198,9 +171,6 @@ next
 next
   case (NeqPropElim e ec x y \<Gamma>)
   then show ?case apply (auto simp: is_singleton_def) done 
-next
-  case (Close rs x)
-  then show ?case apply auto done
 next
   case (Subsume e fs x \<Gamma>)
   then show ?case apply auto 
@@ -216,13 +186,11 @@ next
   case (Fwd_ElimConc e e1 e2 x x1 x2 \<Gamma>)
   then show ?case apply (auto simp:c_prod_def times_list_def) 
     by (smt (verit) is_singleton_def mem_Collect_eq singleton_iff) 
+qed auto
+
 (*next
   case (Bwd_PropConc e es x1 x2 x \<Gamma>)
   then show ?case apply (auto simp:c_prod_def times_list_def) sorry*)
-next
-  case (Order G G')
-  then show ?case apply auto done
-qed
 
 definition SC_proof :: \<open>string form list \<Rightarrow> string form \<Rightarrow> bool\<close> where
   \<open>SC_proof ps p \<equiv> (\<stileturn> p # ps)\<close>
