@@ -132,7 +132,7 @@ inductive One_SC :: \<open>string form list  \<Rightarrow> bool\<close> (\<open>
 | Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<stileturn> Member x e # \<Gamma>  \<Longrightarrow>  \<stileturn> (map (\<lambda>r. Member x r) (fs)) @ \<Gamma>\<close> 
 | Fwd_PropConc:  \<open>con_fwd_prop e e1 e2 \<Longrightarrow> \<stileturn> [(Member x e), (EqAtom x (Fun ''concat'' [x1,x2])), (Member (Var x1) e1), (Member (Var x2) e2)] @ \<Gamma>
                  \<Longrightarrow> \<stileturn> [(EqAtom x (Fun ''concat'' [x1,x2])), (Member (Var x1) e1), (Member (Var x2) e2)] @ \<Gamma>\<close>  
-| Fwd_ElimConc:  \<open>con_fwd_prop_elim e e1 e2 \<Longrightarrow> \<stileturn> [Member x e, EqAtom x (Fun ''concat'' [x1, x2]), (Member (Var x1) e1), (Member (Var x2) e2)]  @ \<Gamma> \<Longrightarrow>  
+| Fwd_ElimConc:  \<open>con_fwd_prop_elim e e1 e2 \<Longrightarrow> \<stileturn> [Member x e, (Member (Var x1) e1), (Member (Var x2) e2)]  @ \<Gamma> \<Longrightarrow>  
                  \<stileturn> [(EqAtom x (Fun ''concat'' [x1, x2])), (Member (Var x1) e1), (Member (Var x2) e2)] @ \<Gamma>\<close>
 (*| Bwd_PropConc:  \<open>con_bwd_prop e = es \<Longrightarrow> \<stileturn> ((\<lambda>r. [Member x e, EqAtom x (Fun ''concat'' [x1,x2]), Member (Var x1) (fst r), Member (Var x2) (snd r)] @ \<Gamma>) ` es) \<Longrightarrow> 
                  \<stileturn> {[Member x e, EqAtom x (Fun ''concat'' [x1,x2])] @ \<Gamma>}\<close>*)
@@ -214,7 +214,8 @@ next
   then show ?case apply (auto simp:c_prod_def times_list_def)  done
 next
   case (Fwd_ElimConc e e1 e2 x x1 x2 \<Gamma>)
-  then show ?case apply (auto simp:c_prod_def times_list_def) done
+  then show ?case apply (auto simp:c_prod_def times_list_def) 
+    by (smt (verit) is_singleton_def mem_Collect_eq singleton_iff) 
 (*next
   case (Bwd_PropConc e es x1 x2 x \<Gamma>)
   then show ?case apply (auto simp:c_prod_def times_list_def) sorry*)
@@ -223,7 +224,6 @@ next
   then show ?case apply auto done
 qed
 
-
 definition SC_proof :: \<open>string form list \<Rightarrow> string form \<Rightarrow> bool\<close> where
   \<open>SC_proof ps p \<equiv> (\<stileturn> p # ps)\<close>
 
@@ -231,6 +231,38 @@ theorem sc_soundness:
   \<open>SC_proof ps p \<Longrightarrow> list_all \<lbrakk>E, concat_str\<rbrakk> ps \<Longrightarrow> \<lbrakk>E, concat_str\<rbrakk> p\<close>
   using SC_soundness unfolding SC_proof_def list_all_def
   by fastforce
+
+subsection \<open>Consistent sets\<close>
+
+text \<open>
+\label{sec:consistent-sets}
+In this section, we describe an abstract criterion for consistent sets.
+A set of sets of formulae is called a {\em consistency property}, if the
+following holds:
+\<close>
+
+definition consistency :: \<open>string form set set \<Rightarrow> bool\<close> where
+  \<open>consistency C = (\<forall>S. S \<in> C \<longrightarrow> FF \<notin> S \<and> 
+               (\<forall>p q. \<not> (EqAtom p q \<in> S \<and> NEqAtom p q \<in> S) \<and>
+               \<not> (\<forall>x r. Member x r \<in> S \<and> NMember x r \<in> S)) \<and> 
+              (\<forall> A B. Con A B \<in> S \<longrightarrow> S \<union> {A, B} \<in> C) \<and> 
+              (\<forall> A B. Neg (Dis A B) \<in> S \<longrightarrow> S \<union> {Neg A, Neg B} \<in> C) \<and> 
+              (\<forall> A B. Dis A B \<in> S \<longrightarrow> S \<union> {A} \<in> C \<or> S \<union> {B} \<in> C) \<and> 
+              (\<forall> A B. Neg (Con A B) \<in> S \<longrightarrow> S \<union> {Neg A} \<in> C \<or> S \<union> {Neg B} \<in> C) \<and> 
+              (\<forall> A. Neg (Neg A) \<in> S \<longrightarrow> S \<union> {A} \<in> C) \<and> 
+              (\<forall> x e ec. regexp_compl e ec \<longrightarrow> NMember x e \<in> S \<longrightarrow> S \<union> {Member x ec} \<in> C ) \<and> 
+              (\<forall> x y f xs. NEqAtom x (Fun f xs) \<in> S \<longrightarrow> S \<union> {NEqAtom x y, EqAtom y (Fun f xs)} \<in> C) \<and> 
+              (\<forall> x e ec. regexp_compl e ec \<longrightarrow> S \<union> {Member x e} \<in> C \<or> S \<union> {Member x ec} \<in> C) \<and> 
+              (\<forall> x y e. Member x e \<in> S \<and> EqAtom x y \<in> S \<longrightarrow> S \<union> {Member x e, EqAtom x y, Member y e} \<in> C) \<and> 
+              (\<forall> e1 e2 x y. regexp_empty e1 e2 \<longrightarrow> Member x e1 \<in> S \<and> NEqAtom x y \<in> S \<and> Member y e2 \<in> S \<longrightarrow> S \<union> {Member x e1, Member y e2} \<in> C) \<and>
+              (\<forall> x y e. is_singleton (lang e) \<longrightarrow> Member x e \<in> S \<and> EqAtom x y \<in> S \<longrightarrow> S \<union> {Member x e, Member y e} \<in> C) \<and> 
+              (\<forall> x y e ec. is_singleton (lang e) \<longrightarrow> regexp_compl e ec \<longrightarrow> Member x e \<in> S \<and> NEqAtom x y \<in> S \<longrightarrow> S \<union> {Member x e, Member y ec} \<in> C) \<and> 
+              (\<forall> x rs. empty_intersection_set rs \<longrightarrow> S \<union> ((\<lambda>r. Member x r) ` (set rs)) \<in> C \<longrightarrow> S \<union> {FF} \<in> C) \<and> 
+              (\<forall> x e fs. subset_intersect_set e fs \<longrightarrow> Member x e \<in> S \<and> S \<union> ((\<lambda>r. Member x r)) ` (set fs) \<in> C \<longrightarrow> S \<union> ((\<lambda>r. Member x r)) ` (set fs) \<in> C) \<and> 
+              (\<forall> x e fs. eq_len_intersect e fs \<longrightarrow>  S \<union> ((\<lambda>r. Member x r)) ` (set fs) \<in> C \<longrightarrow> S \<union> {Member x e} \<in> C) \<and> 
+              (\<forall> x x1 x2 e e1 e2 f. con_fwd_prop e e1 e2 \<longrightarrow> EqAtom x (Fun f [x1, x2]) \<in> S \<and> Member (Var x1) e1 \<in> S \<and> Member (Var x2) e2 \<in> S \<longrightarrow> S \<union> {Member x e, EqAtom x (Fun f [x1,x2]), Member (Var x1) e1, Member (Var x2) e2} \<in> C) \<and> 
+              (\<forall> x x1 x2 e e1 e2 f. con_fwd_prop_elim e e1 e2 \<longrightarrow> EqAtom x (Fun f [x1, x2]) \<in> S \<and> Member (Var x1) e1 \<in> S \<and> Member (Var x2) e2 \<in> S \<longrightarrow> S \<union> {Member x e, Member (Var x1) e1, Member (Var x2) e2} \<in> C) \<and> 
+              (\<forall> S'. S' = S \<longrightarrow> S' \<in> C)) \<close>
 
 subsection \<open>Completeness\<close>
 
