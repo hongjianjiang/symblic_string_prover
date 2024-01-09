@@ -98,18 +98,18 @@ fun eq_len_intersect :: "char BA rexp \<Rightarrow> char BA rexp list \<Rightarr
   "eq_len_intersect r fs = (\<Inter>(lang ` set fs) = lang r \<and> length fs > 1)"
 
 fun member_var_rexp :: "nat list \<Rightarrow> char BA rexp list \<Rightarrow> string form list" where 
-"member_var_rexp [] b = []"|
-"member_var_rexp (v # va) [] = []"|
-"member_var_rexp (x#xs) (y#ys) = (if (length xs = length ys) then (Member pos (Var x) y) # (member_var_rexp xs ys) else [])"
+  "member_var_rexp [] b = []"|
+  "member_var_rexp (v # va) [] = []"|
+  "member_var_rexp (x#xs) (y#ys) = (if (length xs = length ys) then (Member pos (Var x) y) # (member_var_rexp xs ys) else [])"
 
 fun con_fwd_prop ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> bool" where
-"con_fwd_prop r e1 r2 = (lang (r) = lang (Times e1 r2))"
+  "con_fwd_prop r e1 r2 = (lang (r) = lang (Times e1 r2))"
 
 fun con_fwd_prop_elim ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> bool" where
-"con_fwd_prop_elim r e1 e2 = (lang r = lang (Times e1 e2) \<and> is_singleton (lang r))"
+  "con_fwd_prop_elim r e1 e2 = (lang r = lang (Times e1 e2) \<and> is_singleton (lang r))"
 
 fun con_bwd_prop ::" char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where
-"con_bwd_prop r = {(a,b)|a b. lang r = (lang (Times a b))}"
+  "con_bwd_prop r = {(a,b)|a b. lang r = (lang (Times a b))}"
 
 inductive One_SC :: \<open>string form list  \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
   AlphaCon:      \<open>\<stileturn> [A,B] @ \<Gamma> \<Longrightarrow> \<stileturn> [Con A B] @ \<Gamma>\<close>
