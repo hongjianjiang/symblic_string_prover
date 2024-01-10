@@ -108,13 +108,12 @@ fun con_fwd_prop_elim ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> c
   "con_fwd_prop_elim r e1 e2 = (lang r = lang (Times e1 e2) \<and> is_singleton (lang r))"
 
 fun con_bwd_prop ::" char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where
-  "con_bwd_prop r = {(r, One), (One, r)}"
-
+  "con_bwd_prop r = {(a,b)| a b. lang r = lang (Times a b)}"
 
 inductive One_SC :: \<open>string form list * string form list set \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
   AlphaCon:      \<open>\<stileturn> ([Con A B] @ \<Gamma>, {[A,B] @ \<Gamma>})\<close>
 | AlphaNegOr:    \<open>\<stileturn> (Neg (Dis A B)# \<Gamma>, {Neg A #Neg B#\<Gamma>})\<close>
-| AlphaOr:       \<open>\<stileturn> ([Dis A B], {[A], [B]})\<close>
+| AlphaOr:       \<open>\<stileturn> ([Dis A B, \<Gamma>], {[A, \<Gamma>], [B, \<Gamma>]})\<close>
 | AlphaNegAnd:   \<open>\<stileturn> (Neg (Con A B) # \<Gamma>, {Neg A # \<Gamma>, Neg B # \<Gamma>})\<close>
 | AlphaNegNeg:   \<open>\<stileturn> (Neg (Neg A) # \<Gamma>, {A# \<Gamma>})\<close>
 | NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> ((Member neg x e) # \<Gamma>, {(Member pos x ec) # \<Gamma>})\<close>
@@ -133,9 +132,8 @@ inductive One_SC :: \<open>string form list * string form list set \<Rightarrow>
 | Fwd_ElimConc:  \<open>con_fwd_prop_elim e e1 e2 \<Longrightarrow> \<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos (Var x1) e1), (Member pos (Var x2) e2)] @ \<Gamma>,
 { [Member pos x e, (Member pos (Var x1) e1), (Member pos (Var x2) e2)]  @ \<Gamma>})\<close>
 
-| Bwd_PropConc:  \<open> \<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos x e)] @ \<Gamma>,
- {[Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), (Member pos (Var x1) e), (Member pos (Var x2) One)]  @ \<Gamma>,
-[Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), (Member pos (Var x1) One), (Member pos (Var x2) e)]  @ \<Gamma>})\<close>
+| Bwd_PropConc:  \<open>\<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos x e)] ,
+(\<lambda>r. [Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), (Member pos (Var x1) (fst r)), (Member pos (Var x2) (snd r))] ) ` (con_bwd_prop e))\<close>
 
 
 | Order:         \<open>set G = set G' \<Longrightarrow> \<stileturn> (G', {G})\<close>
@@ -146,7 +144,7 @@ declare One_SC.intros [intro]
 subsection \<open>Soundness\<close>
 
 lemma SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<forall>fs \<in> (snd G). \<exists>f \<in> set fs. \<not> \<lbrakk>E, concat_str\<rbrakk> f) \<Longrightarrow> (\<exists>p \<in> set (fst G). \<not> \<lbrakk>E, concat_str\<rbrakk> p) \<close>
-proof (induct rule: One_SC.induct)
+proof (induct arbitrary: E rule: One_SC.induct)
   case (NeqPropElim e ec x y \<Gamma>)
   then show ?case apply auto 
     by (metis (no_types, lifting) DiffI UNIV_I is_singletonE singletonD) 
@@ -155,8 +153,8 @@ next
   then show ?case apply auto 
     by (smt (verit, del_insts) INT_I image_subset_iff semantics_fm.simps(4) sup.cobounded1) 
 next 
-  case (Bwd_PropConc x x1 x2 e \<Gamma>)
-  then show ?case apply simp sledgehammer
+  case (Bwd_PropConc x x1 x2 e)
+  then show ?case apply auto nitpick sorry
 qed (auto simp:l_prod_elim is_singleton_def)
 (*next
   case (Bwd_PropConc e es x1 x2 x \<Gamma>)
