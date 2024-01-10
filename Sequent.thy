@@ -10,7 +10,7 @@ section \<open>Terms and formulae\<close>
 text \<open>
 \label{sec:terms} The datatypes of terms and formulae are defined as follows:
 \<close>
-datatype ('f) tm  = Var nat | Fresh nat |  Fun 'f \<open>nat list\<close> 
+datatype ('f) tm  = Var nat |  Fun 'f \<open>nat list\<close> 
 
 datatype sign = pos | neg
 
@@ -47,7 +47,6 @@ subsection \<open>Semantics of term and form\<close>
 
 primrec semantics_tm :: "(nat \<Rightarrow> string) \<Rightarrow> ('f \<Rightarrow> string list \<Rightarrow> string) \<Rightarrow> 'f tm \<Rightarrow> string" (\<open>\<lparr>_, _\<rparr>\<close>) where
   \<open>\<lparr>E, F\<rparr> (Var n) = E n\<close> |
-  \<open>\<lparr>E, F\<rparr> (Fresh n) = E n\<close> |
   \<open>\<lparr>E, F\<rparr> (Fun f ts) = F f (map E ts)\<close>
 
 fun concat_str :: "string \<Rightarrow> string list \<Rightarrow> string" where
@@ -109,48 +108,59 @@ fun con_fwd_prop_elim ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> c
   "con_fwd_prop_elim r e1 e2 = (lang r = lang (Times e1 e2) \<and> is_singleton (lang r))"
 
 fun con_bwd_prop ::" char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where
-  "con_bwd_prop r = {(a,b)|a b. lang r = (lang (Times a b))}"
+  "con_bwd_prop r = {(r, One), (One, r)}"
 
-inductive One_SC :: \<open>string form list  \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
-  AlphaCon:      \<open>\<stileturn> [A,B] @ \<Gamma> \<Longrightarrow> \<stileturn> [Con A B] @ \<Gamma>\<close>
-| AlphaNegOr:    \<open>\<stileturn> Neg A #Neg B#\<Gamma> \<Longrightarrow> \<stileturn> Neg (Dis A B)# \<Gamma>\<close>
-| AlphaOr:       \<open>\<stileturn> A# \<Gamma> \<Longrightarrow> \<stileturn> B# \<Gamma> \<Longrightarrow> \<stileturn> Dis A B # \<Gamma>\<close>
-| AlphaNegAnd:   \<open>\<stileturn> Neg A # \<Gamma> \<Longrightarrow>  \<stileturn> Neg B # \<Gamma> \<Longrightarrow> \<stileturn> Neg (Con A B) # \<Gamma>\<close>
-| AlphaNegNeg:   \<open>\<stileturn> A# \<Gamma> \<Longrightarrow> \<stileturn> Neg (Neg A) # \<Gamma>\<close>
-| NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> (Member pos x ec) # \<Gamma> \<Longrightarrow> \<stileturn> (Member neg x e) # \<Gamma>\<close>
-| NotEq:         \<open>y = freshVar ([x,(Fun f xs)])  \<Longrightarrow> \<stileturn> [EqFresh neg x y,  EqFresh pos y (Fun f xs), \<Gamma>] \<Longrightarrow> \<stileturn> [EqAtom neg x (Fun f xs), \<Gamma>]\<close>
-| Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> Member pos x e # \<Gamma> \<Longrightarrow>  \<stileturn> Member pos x ec # \<Gamma> \<Longrightarrow>  \<stileturn> \<Gamma>\<close>
-| EqProp:        \<open>\<stileturn> Member pos x e # EqAtom pos x y # Member pos y e # \<Gamma> \<Longrightarrow> \<stileturn> Member pos x e # EqAtom pos x y # \<Gamma>\<close>
-| NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<stileturn> Member pos x e1 # Member pos y e2 # \<Gamma> \<Longrightarrow> \<stileturn> Member pos x e1 # EqAtom neg x y # Member pos y e2 # \<Gamma>\<close>
-| EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<stileturn> Member pos x e # Member pos y e # \<Gamma>\<Longrightarrow> \<stileturn> Member pos x e # (EqAtom pos x y) # \<Gamma>\<close>
-| NeqPropElim:   \<open>is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow> \<stileturn> (Member pos x e) # (Member pos y ec) # \<Gamma> \<Longrightarrow>  
-                 \<stileturn> (Member pos x e) # (EqAtom neg x y) # \<Gamma>\<close>
-| Close:         \<open>empty_intersection_set rs \<Longrightarrow> \<stileturn> map (\<lambda>r. Member pos x r) rs\<close> 
-| Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<stileturn> (map (\<lambda>r. Member pos x r) fs) @ \<Gamma> \<Longrightarrow> \<stileturn> Member pos x e # (map (\<lambda>r. Member pos x r) fs) @ \<Gamma>\<close> 
-| Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<stileturn> Member pos x e # \<Gamma>  \<Longrightarrow>  \<stileturn> (map (\<lambda>r. Member pos x r) (fs)) @ \<Gamma>\<close> 
-| Fwd_PropConc:  \<open>con_fwd_prop e e1 e2 \<Longrightarrow> \<stileturn> [(Member pos x e), (EqAtom pos x (Fun ''concat'' [x1,x2])), (Member pos (Var x1) e1), (Member pos (Var x2) e2)] @ \<Gamma>
-                 \<Longrightarrow> \<stileturn> [(EqAtom pos x (Fun ''concat'' [x1,x2])), (Member pos (Var x1) e1), (Member pos (Var x2) e2)] @ \<Gamma>\<close>  
-| Fwd_ElimConc:  \<open>con_fwd_prop_elim e e1 e2 \<Longrightarrow> \<stileturn> [Member pos x e, (Member pos (Var x1) e1), (Member pos (Var x2) e2)]  @ \<Gamma> \<Longrightarrow>  
-                 \<stileturn> [(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos (Var x1) e1), (Member pos (Var x2) e2)] @ \<Gamma>\<close>
-(*| Bwd_PropConc:  \<open>con_bwd_prop e = es \<Longrightarrow> \<stileturn> ((\<lambda>r. [Member x e, EqAtom x (Fun ''concat'' [x1,x2]), Member (Var x1) (fst r), Member (Var x2) (snd r)] @ \<Gamma>) ` es) \<Longrightarrow> 
-                 \<stileturn> {[Member x e, EqAtom x (Fun ''concat'' [x1,x2])] @ \<Gamma>}\<close>*)
-| Order:         \<open>\<stileturn> G \<Longrightarrow> set G = set G' \<Longrightarrow> \<stileturn> G'\<close>
-| Basic:        \<open> \<stileturn> [A,Neg A, G]\<close>
 
+inductive One_SC :: \<open>string form list * string form list set \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
+  AlphaCon:      \<open>\<stileturn> ([Con A B] @ \<Gamma>, {[A,B] @ \<Gamma>})\<close>
+| AlphaNegOr:    \<open>\<stileturn> (Neg (Dis A B)# \<Gamma>, {Neg A #Neg B#\<Gamma>})\<close>
+| AlphaOr:       \<open>\<stileturn> ([Dis A B], {[A], [B]})\<close>
+| AlphaNegAnd:   \<open>\<stileturn> (Neg (Con A B) # \<Gamma>, {Neg A # \<Gamma>, Neg B # \<Gamma>})\<close>
+| AlphaNegNeg:   \<open>\<stileturn> (Neg (Neg A) # \<Gamma>, {A# \<Gamma>})\<close>
+| NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> ((Member neg x e) # \<Gamma>, {(Member pos x ec) # \<Gamma>})\<close>
+| NotEq:         \<open>y = freshVar ([x,(Fun f xs)])  \<Longrightarrow> \<stileturn> ([EqAtom neg x (Fun f xs), \<Gamma>], {[EqFresh neg x y,  EqFresh pos y (Fun f xs), \<Gamma>]})\<close>
+| Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> (\<Gamma>, {Member pos x e # \<Gamma>, Member pos x ec # \<Gamma>})\<close>
+| EqProp:        \<open>\<stileturn> (Member pos x e # EqAtom pos x y # \<Gamma>, { Member pos x e # EqAtom pos x y # Member pos y e # \<Gamma>})\<close>
+| NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<stileturn> (Member pos x e1 # EqAtom neg x y # Member pos y e2 # \<Gamma>, {Member pos x e1 # Member pos y e2 # \<Gamma>})\<close>
+| EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<stileturn> (Member pos x e # (EqAtom pos x y) # \<Gamma>, {Member pos x e # Member pos y e # \<Gamma>})\<close>
+| NeqPropElim:   \<open>is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow> \<stileturn> ((Member pos x e) # (EqAtom neg x y) # \<Gamma>, {(Member pos x e) # (Member pos y ec) # \<Gamma>})\<close>
+| Close:         \<open>empty_intersection_set rs \<Longrightarrow> \<stileturn> (map (\<lambda>r. Member pos x r) rs, {})\<close> 
+| Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<stileturn> (Member pos x e # (map (\<lambda>r. Member pos x r) fs) @ \<Gamma>, {(map (\<lambda>r. Member pos x r) fs) @ \<Gamma>})\<close> 
+| Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<stileturn> ((map (\<lambda>r. Member pos x r) (fs)) @ \<Gamma>, {Member pos x e # \<Gamma>})\<close> 
+| Fwd_PropConc:  \<open>con_fwd_prop e e1 e2 \<Longrightarrow> \<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1,x2])), (Member pos (Var x1) e1), (Member pos (Var x2) e2)] @ \<Gamma>, 
+{[(Member pos x e), (EqAtom pos x (Fun ''concat'' [x1,x2])), (Member pos (Var x1) e1), (Member pos (Var x2) e2)] @ \<Gamma>})\<close>  
+
+| Fwd_ElimConc:  \<open>con_fwd_prop_elim e e1 e2 \<Longrightarrow> \<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos (Var x1) e1), (Member pos (Var x2) e2)] @ \<Gamma>,
+{ [Member pos x e, (Member pos (Var x1) e1), (Member pos (Var x2) e2)]  @ \<Gamma>})\<close>
+
+| Bwd_PropConc:  \<open> \<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos x e)] @ \<Gamma>,
+ {[Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), (Member pos (Var x1) e), (Member pos (Var x2) One)]  @ \<Gamma>,
+[Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), (Member pos (Var x1) One), (Member pos (Var x2) e)]  @ \<Gamma>})\<close>
+
+
+| Order:         \<open>set G = set G' \<Longrightarrow> \<stileturn> (G', {G})\<close>
+| Basic:        \<open> \<stileturn> ([A,Neg A, G], {})\<close>
+ 
 declare One_SC.intros [intro]
 
 subsection \<open>Soundness\<close>
 
-lemma SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<exists>p \<in> set G. \<not> \<lbrakk>E, concat_str\<rbrakk> p)\<close>
-proof (induct G rule: One_SC.induct)
+lemma SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<forall>fs \<in> (snd G). \<exists>f \<in> set fs. \<not> \<lbrakk>E, concat_str\<rbrakk> f) \<Longrightarrow> (\<exists>p \<in> set (fst G). \<not> \<lbrakk>E, concat_str\<rbrakk> p) \<close>
+proof (induct rule: One_SC.induct)
+  case (NeqPropElim e ec x y \<Gamma>)
+  then show ?case apply auto 
+    by (metis (no_types, lifting) DiffI UNIV_I is_singletonE singletonD) 
+next
   case (Intersect e fs x \<Gamma>)
-  then show ?case  apply auto 
-    by (smt (verit) INT_I image_subset_iff semantics_fm.simps(4) sup.cobounded1)
+  then show ?case apply auto 
+    by (smt (verit, del_insts) INT_I image_subset_iff semantics_fm.simps(4) sup.cobounded1) 
+next 
+  case (Bwd_PropConc x x1 x2 e \<Gamma>)
+  then show ?case apply simp sledgehammer
 qed (auto simp:l_prod_elim is_singleton_def)
-
 (*next
   case (Bwd_PropConc e es x1 x2 x \<Gamma>)
-  then show ?case apply (auto simp:c_prod_def times_list_def) sorry*)
+  then show ?case apply (auto simp:c_prod_def times_list_def) sorry
 
 definition SC_proof :: \<open>string form list \<Rightarrow> string form \<Rightarrow> bool\<close> where
   \<open>SC_proof ps p \<equiv> (\<stileturn> Neg p # ps)\<close>
@@ -158,7 +168,7 @@ definition SC_proof :: \<open>string form list \<Rightarrow> string form \<Right
 theorem sc_soundness:
   \<open>SC_proof ps p \<Longrightarrow> list_all \<lbrakk>E, concat_str\<rbrakk> ps \<Longrightarrow> \<lbrakk>E, concat_str\<rbrakk> p\<close>
   using SC_soundness unfolding SC_proof_def list_all_def
-  by fastforce
+  by fastforce *)
 
 subsection \<open>Consistent sets\<close>
 

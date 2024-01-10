@@ -16,7 +16,6 @@ datatype 'a rexp =
       | Times "'a rexp" "'a rexp"
       | Star "'a rexp"
       | Inter "'a rexp" "'a rexp"
-      | Negation "'a rexp"
 
 text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
@@ -29,8 +28,7 @@ primrec size_of_re :: "'a rexp \<Rightarrow> nat" where
   "size_of_re (Plus m n) = 1 + size_of_re m + size_of_re n" |
   "size_of_re (Times m n) = 1 + size_of_re m + size_of_re n" |
   "size_of_re (Star m) = 1 + size_of_re m" |
-  "size_of_re (Inter m n) = 1 + size_of_re m + size_of_re n"|
-  "size_of_re (Negation m) = 1 + size_of_re m"
+  "size_of_re (Inter m n) = 1 + size_of_re m + size_of_re n"
 
 fun denote_ba ::"'a BA \<Rightarrow> 'a \<Rightarrow> bool" where
   "denote_ba Top c = True"|
@@ -53,7 +51,6 @@ primrec lang :: "'a BA rexp \<Rightarrow> 'a lan" where
 | "lang (Times x y) = lang x \<cdot> lang y"
 | "lang (Star x) = (lang x)\<^sup>\<star>" 
 | "lang (Inter x y)  = lang x \<^bsup>& lang y"
-| "lang (Negation x) = UNIV - lang x"
 
 fun string_to_characterClass :: "string \<Rightarrow> char BA" where
   "string_to_characterClass s = List.foldr (\<lambda>x y. Disj x y) (List.map (\<lambda>x. Atom x) s) Bot"
@@ -464,8 +461,7 @@ primrec rexp_ewp :: "'a BA rexp \<Rightarrow> bool" where
   "rexp_ewp (s \<cdot>\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
   "rexp_ewp (s &\<^sub>r t) = (rexp_ewp s \<and> rexp_ewp t)" |
   "rexp_ewp (s\<^sup>\<star>\<^sub>r) = True"| 
-  "rexp_ewp (Pred a) = False"|
-  "rexp_ewp (Negation a) = (\<not> rexp_ewp a)"
+  "rexp_ewp (Pred a) = False"
 
 abbreviation "ro(s) \<equiv> (if (rexp_ewp s) then 1\<^sub>r else 0\<^sub>r)"
 
@@ -595,11 +591,6 @@ next
   show "P (Pred x)"
     apply (simp add:P_def r_lang_def)
     using rexp_ewp.simps(7) by fastforce
-next 
-  fix x 
-  assume assm:"P x"
-  thus "P (Negation x)"
-    sorry
 qed
 
 lemma "{x|x. x = a \<or> x = b} \<in> range lang \<Longrightarrow> ({x|x. x = a} \<union> {x|x. x = b}) \<in> range lang"
