@@ -19,6 +19,7 @@ datatype ('f) form =
   | EqFresh sign "'f tm" "'f tm"
   | ConcEq "'f tm" "'f tm" "'f tm"
   | Member sign "'f tm" "char BA rexp"
+  | MemberFresh sign "'f tm" "char BA rexp"
   | Dis "'f form" "'f form"                     
   | Con "'f form" "'f form"                      
   | Neg "'f form"     
@@ -57,6 +58,7 @@ primrec semantics_fm (\<open>\<lbrakk>_, _\<rbrakk>\<close>) where
 | \<open>\<lbrakk>E, F\<rbrakk> (EqFresh s x y) = True\<close> 
 | \<open>\<lbrakk>E, F\<rbrakk> (ConcEq z x y) = (\<lparr>E, F\<rparr> z = \<lparr>E, F\<rparr> x @ \<lparr>E, F\<rparr> y)\<close> 
 | \<open>\<lbrakk>E, F\<rbrakk> (Member s x r) = (if s = pos then \<lparr>E, F\<rparr> x \<in> lang r else \<lparr>E, F\<rparr> x \<notin> lang r)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (MemberFresh s x r) = True\<close> 
 | \<open>\<lbrakk>E, F\<rbrakk> (Dis x y) = (\<lbrakk>E, F\<rbrakk> x \<or> \<lbrakk>E, F\<rbrakk> y)\<close> 
 | \<open>\<lbrakk>E, F\<rbrakk> (Con x y) = (\<lbrakk>E, F\<rbrakk> x \<and> \<lbrakk>E, F\<rbrakk> y)\<close> 
 | \<open>\<lbrakk>E, F\<rbrakk> (Neg x) = (\<not> \<lbrakk>E, F\<rbrakk> x)\<close> 
@@ -108,7 +110,12 @@ fun con_fwd_prop_elim ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> c
   "con_fwd_prop_elim r e1 e2 = (lang r = lang (Times e1 e2) \<and> is_singleton (lang r))"
 
 fun con_bwd_prop ::" char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where
-  "con_bwd_prop r = {(a,b)| a b. lang r = lang (Times a b)}"
+  "con_bwd_prop r = {(r, One), (One, r)}"
+
+
+lemma "\<lbrakk>E,concat_str\<rbrakk> (Member pos (Var x1)  e1) \<Longrightarrow> \<lbrakk>E,concat_str\<rbrakk> (Member pos (Var x2)  e2) \<Longrightarrow> \<lbrakk>E,concat_str\<rbrakk> (Member pos (Fun ''concat'' [x1, x2])  (Times e1 e2))"
+  apply (auto simp:c_prod_def times_list_def)
+  done
 
 inductive One_SC :: \<open>string form list * string form list set \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
   AlphaCon:      \<open>\<stileturn> ([Con A B] @ \<Gamma>, {[A,B] @ \<Gamma>})\<close>
@@ -132,10 +139,8 @@ inductive One_SC :: \<open>string form list * string form list set \<Rightarrow>
 | Fwd_ElimConc:  \<open>con_fwd_prop_elim e e1 e2 \<Longrightarrow> \<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos (Var x1) e1), (Member pos (Var x2) e2)] @ \<Gamma>,
 { [Member pos x e, (Member pos (Var x1) e1), (Member pos (Var x2) e2)]  @ \<Gamma>})\<close>
 
-| Bwd_PropConc:  \<open>\<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos x e)] ,
-(\<lambda>r. [Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), (Member pos (Var x1) (fst r)), (Member pos (Var x2) (snd r))] ) ` (con_bwd_prop e))\<close>
-
-
+| Bwd_PropConc:  \<open>\<stileturn> ([(EqAtom pos x (Fun ''concat'' [x1, x2])), (Member pos x e), \<Gamma>] ,
+(\<lambda>r. [Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), (MemberFresh pos (Var x1) (fst r)), (MemberFresh pos (Var x2) (snd r)), \<Gamma>]) ` con_bwd_prop e)\<close>
 | Order:         \<open>set G = set G' \<Longrightarrow> \<stileturn> (G', {G})\<close>
 | Basic:        \<open> \<stileturn> ([A,Neg A, G], {})\<close>
  
@@ -144,7 +149,7 @@ declare One_SC.intros [intro]
 subsection \<open>Soundness\<close>
 
 lemma SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<forall>fs \<in> (snd G). \<exists>f \<in> set fs. \<not> \<lbrakk>E, concat_str\<rbrakk> f) \<Longrightarrow> (\<exists>p \<in> set (fst G). \<not> \<lbrakk>E, concat_str\<rbrakk> p) \<close>
-proof (induct arbitrary: E rule: One_SC.induct)
+proof (induct rule: One_SC.induct)
   case (NeqPropElim e ec x y \<Gamma>)
   then show ?case apply auto 
     by (metis (no_types, lifting) DiffI UNIV_I is_singletonE singletonD) 
@@ -153,20 +158,9 @@ next
   then show ?case apply auto 
     by (smt (verit, del_insts) INT_I image_subset_iff semantics_fm.simps(4) sup.cobounded1) 
 next 
-  case (Bwd_PropConc x x1 x2 e)
-  then show ?case apply auto nitpick sorry
+  case (Bwd_PropConc x x1 x2 e \<Gamma>)
+  then show ?case  by force
 qed (auto simp:l_prod_elim is_singleton_def)
-(*next
-  case (Bwd_PropConc e es x1 x2 x \<Gamma>)
-  then show ?case apply (auto simp:c_prod_def times_list_def) sorry
-
-definition SC_proof :: \<open>string form list \<Rightarrow> string form \<Rightarrow> bool\<close> where
-  \<open>SC_proof ps p \<equiv> (\<stileturn> Neg p # ps)\<close>
-
-theorem sc_soundness:
-  \<open>SC_proof ps p \<Longrightarrow> list_all \<lbrakk>E, concat_str\<rbrakk> ps \<Longrightarrow> \<lbrakk>E, concat_str\<rbrakk> p\<close>
-  using SC_soundness unfolding SC_proof_def list_all_def
-  by fastforce *)
 
 subsection \<open>Consistent sets\<close>
 
