@@ -116,7 +116,7 @@ inductive One_SC :: \<open>string form list \<Rightarrow> bool\<close> (\<open>\
 | AlphaNegAnd:   \<open>\<stileturn> Neg A # \<Gamma> \<Longrightarrow>  \<stileturn> Neg B # \<Gamma> \<Longrightarrow> \<stileturn> Neg (Con A B) # \<Gamma>\<close>
 | AlphaNegNeg:   \<open>\<stileturn> A# \<Gamma> \<Longrightarrow> \<stileturn> Neg (Neg A) # \<Gamma>\<close>
 | NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> (Member pos x ec) # \<Gamma> \<Longrightarrow> \<stileturn> (Member neg x e) # \<Gamma>\<close>
-| NotEq:         \<open>\<stileturn> [EqFresh neg x y,  EqFresh pos y (Fun f xs), \<Gamma>] \<Longrightarrow> \<stileturn> [EqAtom neg x (Fun f xs), \<Gamma>]\<close>
+| NotEq:         \<open>\<stileturn> [EqFresh neg x y,  EqFresh pos y (Fun f xs)] @ \<Gamma> \<Longrightarrow> \<stileturn> [EqAtom neg x (Fun f xs)]  @ \<Gamma>\<close>
 | Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> Member pos x e # \<Gamma> \<Longrightarrow>  \<stileturn> Member pos x ec # \<Gamma> \<Longrightarrow>  \<stileturn> \<Gamma>\<close>
 | EqProp:        \<open>\<stileturn> Member pos x e # EqAtom pos x y # Member pos y e # \<Gamma> \<Longrightarrow> \<stileturn> Member pos x e # EqAtom pos x y # \<Gamma>\<close>
 | NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<stileturn> Member pos x e1 # Member pos y e2 # \<Gamma> \<Longrightarrow> \<stileturn> Member pos x e1 # EqAtom neg x y # Member pos y e2 # \<Gamma>\<close>
@@ -183,7 +183,7 @@ definition consistency :: "string form set set \<Rightarrow> bool" where
               (\<forall> A. Neg (Neg A) \<in> S \<longrightarrow> S \<union> {A} \<in> C) \<and> 
               (\<forall> x e ec. regexp_compl e ec \<longrightarrow> Member neg x e \<in> S \<longrightarrow> S \<union> {Member pos x ec} \<in> C) \<and> 
               (\<forall> x y f xs. EqAtom neg  x (Fun f xs) \<in> S \<longrightarrow> S \<union> {EqFresh neg  x y, EqFresh pos y (Fun f xs)} \<in> C) \<and> 
-              (\<forall> x e ec. regexp_compl e ec \<longrightarrow> S \<union> {Member pos x e} \<in> C \<longrightarrow> S \<union> {Member pos x ec} \<in> C) \<and> 
+              (\<forall> x e ec. regexp_compl e ec \<longrightarrow> S \<union> {Member pos x e} \<in> C \<longrightarrow> S \<union> {Member pos x ec} \<in> C \<longrightarrow> S \<in> C) \<and> 
               (\<forall> x y e. Member pos x e \<in> S \<and> EqAtom pos x y \<in> S \<longrightarrow> S \<union> {Member pos x e, EqAtom pos x y, Member pos y e} \<in> C) \<and> 
               (\<forall> e1 e2 x y. regexp_empty e1 e2 \<longrightarrow> Member pos x e1 \<in> S \<and> EqAtom neg  x y \<in> S \<and> Member pos y e2 \<in> S \<longrightarrow> S \<union> {Member pos x e1, Member pos y e2} \<in> C) \<and>
               (\<forall> x y e. is_singleton (lang e) \<longrightarrow> Member pos x e \<in> S \<and> EqAtom pos x y \<in> S \<longrightarrow> S \<union> {Member pos x e, Member pos y e} \<in> C) \<and> 
@@ -258,7 +258,15 @@ proof (intro conjI allI impI notI)
     fix x y f xs 
     assume \<open>EqAtom neg x (Fun f xs) \<in> S\<close>
     then show \<open>S \<union> {EqFresh neg x y, EqFresh pos y (Fun f xs)} \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
-      using * \<open>\<not> (\<stileturn> G)\<close> Order NotEq apply auto  sorry
+      using * \<open>\<not> (\<stileturn> G)\<close> Order NotEq apply auto
+      by (metis insert_absorb list.simps(15))
+  }
+  {
+    fix x e ec
+    assume \<open>regexp_compl e ec\<close> and \<open>S \<union> {Member pos x e} \<in> {set G |G. \<not> (\<stileturn> G)}\<close> and\<open>S \<union> {Member pos x ec} \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
+    then show \<open>S \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
+      using * \<open>\<not> (\<stileturn> G)\<close> Order Cut 
+      by blast 
   }
   {
     fix x y e
@@ -313,7 +321,7 @@ proof (intro conjI allI impI notI)
     fix x x1 x2 e e1 e2
     assume \<open>con_fwd_prop e e1 e2\<close> and \<open>EqAtom pos x (Fun ''concat'' [x1, x2]) \<in> S \<and> Member pos x1 e1 \<in> S \<and> Member pos x2 e2 \<in> S\<close>
     then show \<open>S \<union> {Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), Member pos x1 e1, Member pos x2 e2} \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
-      using * \<open>\<not> (\<stileturn> G)\<close> Order Fwd_PropConc apply auto sorry
+      using * \<open>\<not> (\<stileturn> G)\<close> Order Fwd_PropConc apply auto 
   }
   {
     fix S'
