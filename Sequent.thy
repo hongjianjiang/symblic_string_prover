@@ -111,7 +111,7 @@ fun con_bwd_prop ::" char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) se
 
 inductive One_SC :: \<open>string form list \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
   AlphaCon:      \<open>\<stileturn> [A,B] @ \<Gamma> \<Longrightarrow> \<stileturn> [Con A B] @ \<Gamma>\<close>
-| AlphaNegOr:    \<open>\<stileturn> Neg A #Neg B#\<Gamma> \<Longrightarrow> \<stileturn> Neg (Dis A B)# \<Gamma>\<close>
+| AlphaNegOr:    \<open>\<stileturn> [Neg A, Neg B] @\<Gamma> \<Longrightarrow> \<stileturn> Neg (Dis A B)# \<Gamma>\<close>
 | AlphaOr:       \<open>\<stileturn> A# \<Gamma> \<Longrightarrow> \<stileturn> B# \<Gamma> \<Longrightarrow> \<stileturn> Dis A B # \<Gamma>\<close>
 | AlphaNegAnd:   \<open>\<stileturn> Neg A # \<Gamma> \<Longrightarrow>  \<stileturn> Neg B # \<Gamma> \<Longrightarrow> \<stileturn> Neg (Con A B) # \<Gamma>\<close>
 | AlphaNegNeg:   \<open>\<stileturn> A# \<Gamma> \<Longrightarrow> \<stileturn> Neg (Neg A) # \<Gamma>\<close>
@@ -134,7 +134,7 @@ inductive One_SC :: \<open>string form list \<Rightarrow> bool\<close> (\<open>\
                  \<stileturn> {[Member x e, EqAtom x (Fun ''concat'' [x1,x2])] @ \<Gamma>}\<close>*)
 | Order:         \<open>\<stileturn> G \<Longrightarrow> set G = set G' \<Longrightarrow> \<stileturn> G'\<close>
 | Basic:         \<open>\<stileturn> [A,Neg A, G]\<close>
-| BasicFF:       \<open>\<stileturn> FF # G\<close>
+
 
 declare One_SC.intros [intro]
 
@@ -175,7 +175,7 @@ theorem sc_soundness:
 subsection \<open>Consistent sets\<close>
 
 definition consistency :: "string form set set \<Rightarrow> bool" where
-  "consistency C = (\<forall>S. S \<in> C \<longrightarrow> FF \<notin> S \<and> 
+  "consistency C = (\<forall>S. S \<in> C \<longrightarrow> 
               (\<forall> A B. Con A B \<in> S \<longrightarrow> S \<union> {A, B} \<in> C) \<and>
               (\<forall> A B. Neg (Dis A B) \<in> S \<longrightarrow> S \<union> {Neg A, Neg B} \<in> C) \<and> 
               (\<forall> A B. Dis A B \<in> S \<longrightarrow> S \<union> {A} \<in> C \<or> S \<union> {B} \<in> C) \<and> 
@@ -207,11 +207,6 @@ proof (intro conjI allI impI notI)
   then obtain G :: \<open>string form list\<close>
     where *: \<open>S = set G\<close> and \<open>\<not> (\<stileturn> G)\<close>
     by blast
-  { 
-    assume \<open>FF \<in> S\<close>
-    then show False
-      using * Basic Order \<open>\<not> (\<stileturn> G)\<close> by auto 
-  }
   {
     fix A B 
     assume \<open>Con A B \<in> S\<close>
@@ -347,4 +342,11 @@ proof (intro conjI allI impI notI)
   }
 qed
 
+theorem One_SC_completeness':
+  fixes p :: \<open>string form\<close>
+  assumes  mod: \<open>\<forall>(e :: nat \<Rightarrow> string) f. list_all (eval e f g) ps \<longrightarrow> eval e f g p\<close>
+  shows \<open>One_SC_proof ps p\<close>
+proof (rule ccontr)
+  fix e
+  assume \<open>\<not> One_SC_proof ps p\<close>
 end
