@@ -144,7 +144,7 @@ lemma aux_close : "Suc 0 < |rs| \<Longrightarrow>  \<Inter> (Symbolic_Regular_Al
   apply auto
   done
 
-lemma SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<exists>p \<in> set G. \<not> \<lbrakk>E, concat_str\<rbrakk> p)\<close>
+lemma One_SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<exists>p \<in> set G. \<not> \<lbrakk>E, concat_str\<rbrakk> p)\<close>
 proof (induct G rule: One_SC.induct)
   case (Close rs x \<Gamma>)
   then show ?case apply auto
@@ -164,12 +164,12 @@ qed (auto simp:l_prod_elim is_singleton_def)
   case (Bwd_PropConc e es x1 x2 x \<Gamma>)
   then show ?case apply (auto simp:c_prod_def times_list_def) sorry*)
 
-definition SC_proof :: \<open>string form list \<Rightarrow> string form \<Rightarrow> bool\<close> where
-  \<open>SC_proof ps p \<equiv> (\<stileturn>  Neg p # ps)\<close>
+definition One_SC_proof :: \<open>string form list \<Rightarrow> string form \<Rightarrow> bool\<close> where
+  \<open>One_SC_proof ps p \<equiv> (\<stileturn>  Neg p # ps)\<close>
 
 theorem sc_soundness:
-  \<open>SC_proof ps p \<Longrightarrow> list_all \<lbrakk>E, concat_str\<rbrakk> ps \<Longrightarrow> \<lbrakk>E, concat_str\<rbrakk> p\<close>
-  using SC_soundness unfolding SC_proof_def list_all_def
+  \<open>One_SC_proof ps p \<Longrightarrow> list_all \<lbrakk>E, concat_str\<rbrakk> ps \<Longrightarrow> \<lbrakk>E, concat_str\<rbrakk> p\<close>
+  using One_SC_soundness unfolding One_SC_proof_def list_all_def
   by fastforce
 
 subsection \<open>Consistent sets\<close>
@@ -191,13 +191,13 @@ definition consistency :: "string form set set \<Rightarrow> bool" where
               (\<forall> x rs. length rs > 1 \<longrightarrow> empty_intersection_set rs \<longrightarrow> S \<union> ((\<lambda>r. Member pos x r) ` (set rs)) \<notin> C) \<and> 
               (\<forall> x e fs. subset_intersect_set e fs \<longrightarrow> Member pos x e \<in> S \<and> S \<union> ((\<lambda>r. Member pos x r)) ` (set fs) \<in> C \<longrightarrow> S \<union> ((\<lambda>r. Member pos x r)) ` (set fs) \<in> C) \<and> 
               (\<forall> x e fs. eq_len_intersect e fs \<longrightarrow>  S \<union> ((\<lambda>r. Member pos x r)) ` (set fs) \<in> C \<longrightarrow> S \<union> {Member pos x e} \<in> C) \<and> 
-              (\<forall> x x1 x2 e e1 e2. con_fwd_prop e e1 e2 \<longrightarrow> EqAtom pos x (Fun ''concat'' [x1, x2]) \<in> S \<and> Member pos (x1) e1 \<in> S \<and> Member pos (x2) e2 \<in> S \<longrightarrow> S \<union> {Member pos x e, EqAtom pos x (Fun ''concat'' [x1,x2]), Member pos (x1) e1, Member pos (x2) e2} \<in> C) \<and> 
+              (\<forall> x x1 x2 e e1 e2. con_fwd_prop e e1 e2 \<longrightarrow> EqAtom pos x (Fun ''concat'' [x1, x2]) \<in> S \<and> Member pos x1 e1 \<in> S \<and> Member pos x2 e2 \<in> S \<longrightarrow> S \<union> {Member pos x e, EqAtom pos x (Fun ''concat'' [x1,x2]), Member pos x1 e1, Member pos x2 e2} \<in> C) \<and> 
               (\<forall> x x1 x2 e e1 e2. con_fwd_prop_elim e e1 e2 \<longrightarrow> EqAtom pos x (Fun ''concat'' [x1, x2]) \<in> S \<and> Member pos (x1) e1 \<in> S \<and> Member pos (x2) e2 \<in> S \<longrightarrow> S \<union> {EqAtom pos x (Fun ''concat'' [x1,x2]), Member pos x e, Member pos (x1) e1, Member pos (x2) e2} \<in> C) \<and> 
               (\<forall> S'. S' = S \<longrightarrow> S' \<in> C))"
 
 subsection \<open>Completeness\<close>
 
-theorem TCd_consistency:
+theorem One_SC_consistency:
   assumes inf_param: \<open>infinite (UNIV::'a set)\<close>
   shows \<open>consistency {S:: string form set. \<exists>G. S = set G \<and> \<not> (\<stileturn> G)}\<close>
   unfolding consistency_def
@@ -320,34 +320,31 @@ proof (intro conjI allI impI notI)
   {
     fix x x1 x2 e e1 e2
     assume \<open>con_fwd_prop e e1 e2\<close> and \<open>EqAtom pos x (Fun ''concat'' [x1, x2]) \<in> S \<and> Member pos x1 e1 \<in> S \<and> Member pos x2 e2 \<in> S\<close>
-    then show \<open>S \<union> {Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), Member pos x1 e1, Member pos x2 e2} \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
-      using * \<open>\<not> (\<stileturn> G)\<close> Order Fwd_PropConc apply auto 
+    then have \<open>\<not> (\<stileturn> Member pos x e # EqAtom pos x (Fun ''concat'' [x1, x2]) # Member pos x1 e1# Member pos x2 e2 # G)\<close>
+      using * \<open>\<not> (\<stileturn> G)\<close> Order Fwd_PropConc apply auto  
+      by (smt (verit, del_insts) insert_absorb list.simps(15))
+    moreover have \<open>S \<union> {Member pos x e,EqAtom pos x (Fun ''concat'' [x1, x2]),Member pos x1 e1, Member pos x2 e2} = set (Member pos x e # EqAtom pos x (Fun ''concat'' [x1, x2]) # Member pos x1 e1# Member pos x2 e2 # G)\<close>
+      using * by simp
+    ultimately show \<open>S \<union> {Member pos x e, EqAtom pos x (Fun ''concat'' [x1, x2]), Member pos x1 e1, Member pos x2 e2} \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
+      using * \<open>\<not> (\<stileturn> G)\<close> Order Fwd_PropConc by auto 
   }
   {
     fix S'
     assume \<open>S \<in> {set G |G. \<not> (\<stileturn> G)}\<close> and \<open>S' = S\<close>
     then show \<open>S' \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
-      using * \<open>\<not> (\<stileturn> G)\<close> Order apply auto  done
+      using \<open>\<not> (\<stileturn> G)\<close> by auto
   }
   {
     fix x x1 x2 e e1 e2 
     assume \<open>con_fwd_prop_elim e e1 e2\<close> and \<open>EqAtom pos x (Fun ''concat'' [x1, x2]) \<in> S \<and> Member pos x1 e1 \<in> S \<and> Member pos x2 e2 \<in> S\<close>
-    then show \<open>S \<union> {EqAtom pos x (Fun ''concat'' [x1,x2]), Member pos x e, Member pos x1 e1, Member pos x2 e2} \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
-      using * \<open>\<not> (\<stileturn> G)\<close> Order Fwd_ElimConc apply auto sorry
+    then have \<open>\<not> (\<stileturn> EqAtom pos x (Fun ''concat'' [x1, x2])# Member pos x e# Member pos x1 e1#  Member pos x2 e2 # G)\<close>
+      using * \<open>\<not> (\<stileturn> G)\<close> Order Fwd_ElimConc apply auto 
+      by (smt (verit, del_insts) insert_absorb list.set_intros(2) list.simps(15))
+    moreover have \<open>S \<union> {EqAtom pos x (Fun ''concat'' [x1, x2]), Member pos x e, Member pos x1 e1,  Member pos x2 e2} = set (EqAtom pos x (Fun ''concat'' [x1, x2])# Member pos x e# Member pos x1 e1#  Member pos x2 e2 # G)\<close>
+      using * by simp
+    ultimately show \<open>S \<union> {EqAtom pos x (Fun ''concat'' [x1, x2]), Member pos x e, Member pos x1 e1, Member pos x2 e2} \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
+      using \<open>\<not> (\<stileturn> G)\<close> by auto 
   }
-
-
-
-
-
-
-
-theorem SC_completeness':
-  fixes p :: \<open>string form\<close>
-  assumes  mod: \<open>\<forall>e f. list_all (eval e f) ps \<Longrightarrow> eval e f p\<close>
-  shows \<open>SC_proof ps p\<close>
-  apply(rule ccontr)
-  sorry
-
+qed
 
 end
