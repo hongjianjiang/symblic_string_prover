@@ -1,8 +1,8 @@
 
 section \<open>Sequent Calculus\<close>
 
-theory Sequent 
-  imports Symbolic_Regular_Algebra_Model "HOL-Library.Multiset" Comparison_Sort_Lower_Bound.Linorder_Relations 
+theory Ostrich_Sequent 
+  imports Symbolic_Regular_Algebra_Model "FOL-Fitting.FOL_Fitting" 
 begin
 
 section \<open>Terms and formulae\<close>
@@ -42,6 +42,27 @@ definition
 lemma "freshVar [Var (0::nat), Var 1, Var 3] = Var 2"
   apply (auto simp: freshVar_def Least_def)
   using Zero_not_Suc bot_nat_0.extremum by fastforce
+
+subsection \<open>Parameters\<close>
+
+primrec
+  paramst :: \<open>'f tm \<Rightarrow> 'f set\<close> and
+  paramsts :: \<open>'f tm list \<Rightarrow> 'f set\<close> where
+  \<open>paramst (Var n) = {}\<close>
+| \<open>paramst (Fun a ts) = {a} \<union> paramsts ts\<close>
+| \<open>paramsts [] = {}\<close>
+| \<open>paramsts (t # ts) = (paramst t \<union> paramsts ts)\<close>
+
+primrec params :: \<open>'f form \<Rightarrow> 'f set\<close> where
+  \<open>params FF = {}\<close>
+| \<open>params TT = {}\<close>
+| \<open>params (EqAtom s p q) = paramst p \<union> paramst q\<close>
+| \<open>params (EqFresh s p q) = paramst p \<union> paramst q\<close>
+| \<open>params (Dis p q) = params p \<union> params q\<close>
+| \<open>params (Con p q) = params p \<union> params q\<close>
+| \<open>params (Neg p) = params p\<close>
+| \<open>params (ConcEq m p q) = paramst m \<union> paramst p \<union> paramst q\<close>
+| \<open>params (Member s x r) = paramst x\<close>
 
 subsection \<open>Semantics of term and form\<close>
 
@@ -341,6 +362,16 @@ proof (intro conjI allI impI notI)
       using \<open>\<not> (\<stileturn> G)\<close> by auto 
   }
 qed
+
+theorem model_existence:
+  assumes \<open>consistency C\<close>
+    and \<open>S \<in> C\<close>
+    and \<open>infinite (- (\<Union>p \<in> S. params p))\<close>
+    and \<open>p \<in> S\<close>
+  shows \<open>eval e HApp (\<lambda>a ts. Pred a (terms_of_hterms ts) \<in> Extend S
+        (mk_finite_char (mk_alt_consistency (close C))) from_nat) p\<close>
+  using assms hintikka_model hintikka_Extend_S Extend_subset
+  by blast
 
 theorem One_SC_completeness':
   fixes p :: \<open>string form\<close>
