@@ -2,7 +2,7 @@
 section \<open>Sequent Calculus\<close>
 
 theory Ostrich_Sequent 
-  imports Symbolic_Regular_Algebra_Model "FOL-Fitting.FOL_Fitting" 
+  imports Symbolic_Regular_Algebra_Model "HOL-Library.Countable"
 begin
 
 section \<open>Terms and formulae\<close>
@@ -14,16 +14,29 @@ datatype ('f) tm  = Var nat  |  Fun 'f \<open>'f tm list\<close>
 
 datatype sign = pos | neg
 
-datatype ('f) form = 
-    EqAtom sign "'f tm" "'f tm"
+datatype ('f, 'r) form = 
+    FF
+  | TT
+  | EqAtom sign "'f tm" "'f tm"
   | EqFresh sign "'f tm" "'f tm"
   | ConcEq "'f tm" "'f tm" "'f tm"
-  | Member sign "'f tm" "char BA rexp"
-  | Dis "'f form" "'f form"                     
-  | Con "'f form" "'f form"                      
-  | Neg "'f form"     
-  | FF
-  | TT
+  | Member sign "'f tm" "'r rexp"
+  | Dis "('f, 'r) form" "('f, 'r) form"
+  | Con "('f, 'r) form" "('f, 'r) form"
+  | Neg "('f, 'r) form"
+
+instance \<open>rexp\<close> :: (countable) countable
+  by countable_datatype
+
+instance \<open>tm\<close> :: (countable) countable
+  by countable_datatype
+
+instance \<open>sign\<close> :: countable
+  by countable_datatype
+
+instance form :: (countable,countable) countable 
+  by countable_datatype
+  
 
 subsection \<open>Fresh term\<close>
 
@@ -53,7 +66,7 @@ primrec
 | \<open>paramsts [] = {}\<close>
 | \<open>paramsts (t # ts) = (paramst t \<union> paramsts ts)\<close>
 
-primrec params :: \<open>'f form \<Rightarrow> 'f set\<close> where
+primrec params :: \<open>('f,'r) form \<Rightarrow> 'f set\<close> where
   \<open>params FF = {}\<close>
 | \<open>params TT = {}\<close>
 | \<open>params (EqAtom s p q) = paramst p \<union> paramst q\<close>
@@ -88,22 +101,22 @@ primrec semantics_fm (\<open>\<lbrakk>_, _\<rbrakk>\<close>) where
 
 subsection \<open>Proof System\<close>
 
-fun is_Member :: "'f form \<Rightarrow> bool" where 
+fun is_Member :: "('f, 'r) form \<Rightarrow> bool" where 
   "is_Member (Member s x r)  = True"|
   "is_Member _ = False"
 
-fun variable_in_member :: "'f form \<Rightarrow> 'f tm option" where 
+fun variable_in_member :: "('f, 'r) form \<Rightarrow> 'f tm option" where 
   "variable_in_member (Member s x r) = Some x"|
   "variable_in_member _ = None"
 
-fun rexp_in_member :: "'f form \<Rightarrow> char BA rexp  " where 
+fun rexp_in_member :: "('f, 'r) form \<Rightarrow> 'r rexp" where 
   "rexp_in_member (Member s x r) = r"
 
 definition "distinct_variable  ls = distinct (map (variable_in_member) ls)"
 
 definition "single_word ls = (List.find (\<lambda>r. \<not> is_singleton (lang r)) (map (rexp_in_member) ls) = None)"
 
-fun exists_solution :: "string form list \<Rightarrow> bool" where
+fun exists_solution :: "(string, char BA) form list \<Rightarrow> bool" where
   "exists_solution ls = (if ls = [] then False 
                        else list_all is_Member ls \<and> distinct_variable ls \<and> single_word ls)"  
 
@@ -116,7 +129,7 @@ fun subset_intersect_set :: "char BA rexp \<Rightarrow> char BA rexp list \<Righ
 fun eq_len_intersect :: "char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where 
   "eq_len_intersect r fs = (\<Inter>(lang ` set fs) = lang r \<and> length fs > 1)"
 
-fun member_var_rexp :: "nat list \<Rightarrow> char BA rexp list \<Rightarrow> string form list" where 
+fun member_var_rexp :: "nat list \<Rightarrow> char BA rexp list \<Rightarrow> (string, char BA) form list" where 
   "member_var_rexp [] b = []"|
   "member_var_rexp (v # va) [] = []"|
   "member_var_rexp (x#xs) (y#ys) = (if (length xs = length ys) then (Member pos (Var x) y) # (member_var_rexp xs ys) else [])"
@@ -130,7 +143,7 @@ fun con_fwd_prop_elim ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> c
 fun con_bwd_prop ::" char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where
   "con_bwd_prop r = {(a,b)|a b. lang r = (lang (Times a b))}"
 
-inductive One_SC :: \<open>string form list \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
+inductive One_SC :: \<open>(string, char BA) form list \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
   AlphaCon:      \<open>\<stileturn> [A,B] @ \<Gamma> \<Longrightarrow> \<stileturn> [Con A B] @ \<Gamma>\<close>
 | AlphaNegOr:    \<open>\<stileturn> [Neg A, Neg B] @\<Gamma> \<Longrightarrow> \<stileturn> Neg (Dis A B)# \<Gamma>\<close>
 | AlphaOr:       \<open>\<stileturn> A# \<Gamma> \<Longrightarrow> \<stileturn> B# \<Gamma> \<Longrightarrow> \<stileturn> Dis A B # \<Gamma>\<close>
@@ -185,7 +198,7 @@ qed (auto simp:l_prod_elim is_singleton_def)
   case (Bwd_PropConc e es x1 x2 x \<Gamma>)
   then show ?case apply (auto simp:c_prod_def times_list_def) sorry*)
 
-definition One_SC_proof :: \<open>string form list \<Rightarrow> string form \<Rightarrow> bool\<close> where
+definition One_SC_proof :: \<open>(string, char BA) form list \<Rightarrow> (string, char BA) form \<Rightarrow> bool\<close> where
   \<open>One_SC_proof ps p \<equiv> (\<stileturn>  Neg p # ps)\<close>
 
 theorem sc_soundness:
@@ -195,7 +208,7 @@ theorem sc_soundness:
 
 subsection \<open>Consistent sets\<close>
 
-definition consistency :: "string form set set \<Rightarrow> bool" where
+definition consistency :: "(string, char BA) form set set \<Rightarrow> bool" where
   "consistency C = (\<forall>S. S \<in> C \<longrightarrow> 
               (\<forall> A B. Con A B \<in> S \<longrightarrow> S \<union> {A, B} \<in> C) \<and>
               (\<forall> A B. Neg (Dis A B) \<in> S \<longrightarrow> S \<union> {Neg A, Neg B} \<in> C) \<and> 
@@ -220,12 +233,12 @@ subsection \<open>Completeness\<close>
 
 theorem One_SC_consistency:
   assumes inf_param: \<open>infinite (UNIV::'a set)\<close>
-  shows \<open>consistency {S:: string form set. \<exists>G. S = set G \<and> \<not> (\<stileturn> G)}\<close>
+  shows \<open>consistency {S:: (string, char BA) form set. \<exists>G. S = set G \<and> \<not> (\<stileturn> G)}\<close>
   unfolding consistency_def
 proof (intro conjI allI impI notI)
-  fix S :: \<open>string form set\<close>
+  fix S :: \<open>(string, char BA) form set\<close>
   assume \<open>S \<in> {set G | G. \<not> (\<stileturn> G)}\<close> (is \<open>S \<in> ?C\<close>)
-  then obtain G :: \<open>string form list\<close>
+  then obtain G :: \<open>(string, char BA) form list\<close>
     where *: \<open>S = set G\<close> and \<open>\<not> (\<stileturn> G)\<close>
     by blast
   {
@@ -318,7 +331,7 @@ proof (intro conjI allI impI notI)
     assume \<open> 1 < |rs|\<close> and \<open>empty_intersection_set rs\<close> and  \<open>S \<union> Member pos x ` set rs \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
     then show False
       using * \<open>\<not> (\<stileturn> G)\<close> Order Close apply auto 
-      by (metis list.set_map set_append sup_commute)
+      by (metis (no_types, lifting) list.set_map set_append sup_commute)
   }
   {
     fix x e fs
@@ -331,7 +344,7 @@ proof (intro conjI allI impI notI)
     assume \<open>eq_len_intersect e fs\<close> and \<open>S \<union> Member pos x ` set fs \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
     then show \<open>S \<union> {Member pos x e} \<in> {set G |G. \<not> (\<stileturn> G)}\<close>
       using * \<open>\<not> (\<stileturn> G)\<close> Order Intersect apply auto 
-      by (metis List.insert_def List.set_insert list.set_map set_append sup_commute)
+      by (metis (no_types, lifting) list.set_map list.simps(15) set_append sup_commute)
   }
   {
     fix x x1 x2 e e1 e2
@@ -363,21 +376,14 @@ proof (intro conjI allI impI notI)
   }
 qed
 
-theorem model_existence:
-  assumes \<open>consistency C\<close>
-    and \<open>S \<in> C\<close>
-    and \<open>infinite (- (\<Union>p \<in> S. params p))\<close>
-    and \<open>p \<in> S\<close>
-  shows \<open>eval e HApp (\<lambda>a ts. Pred a (terms_of_hterms ts) \<in> Extend S
-        (mk_finite_char (mk_alt_consistency (close C))) from_nat) p\<close>
-  using assms hintikka_model hintikka_Extend_S Extend_subset
-  by blast
-
+definition close :: \<open>(string, char BA) form set set \<Rightarrow> (string, char BA) form set set\<close> where
+  \<open>close C = {S. \<exists>S' \<in> C. S \<subseteq> S'}\<close>
+ 
 theorem One_SC_completeness':
-  fixes p :: \<open>string form\<close>
+  fixes p :: \<open>(string, char BA) form\<close>
   assumes  mod: \<open>\<forall>(e :: nat \<Rightarrow> string) f. list_all (eval e f g) ps \<longrightarrow> eval e f g p\<close>
   shows \<open>One_SC_proof ps p\<close>
-proof (rule ccontr)
-  fix e
-  assume \<open>\<not> One_SC_proof ps p\<close>
+  sorry
+
+
 end
