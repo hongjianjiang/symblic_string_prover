@@ -880,21 +880,27 @@ text \<open>
 A Hintikka set is defined as follows:
 \<close>
 
-definition hintikka :: \<open>('a, 'b) form set \<Rightarrow> bool\<close> where
+definition hintikka :: \<open>('a, char BA) form set \<Rightarrow> bool\<close> where
   \<open>hintikka H =
-     ((\<forall>p ts. \<not> (A \<in> H \<and> Neg A \<in> H)) \<and>
+     ((\<forall>A. \<not> (A \<in> H \<and> Neg A \<in> H)) \<and>
      FF \<notin> H \<and> Neg TT \<notin> H \<and>
      (\<forall>Z. Neg (Neg Z) \<in> H \<longrightarrow> Z \<in> H) \<and>
-     (\<forall>A B. And A B \<in> H \<longrightarrow> A \<in> H \<and> B \<in> H) \<and>
-     (\<forall>A B. Neg (Or A B) \<in> H \<longrightarrow> Neg A \<in> H \<and> Neg B \<in> H) \<and>
-     (\<forall>A B. Or A B \<in> H \<longrightarrow> A \<in> H \<or> B \<in> H) \<and>
-     (\<forall>A B. Neg (And A B) \<in> H \<longrightarrow> Neg A \<in> H \<or> Neg B \<in> H) \<and>
-     (\<forall>A B. Impl A B \<in> H \<longrightarrow> Neg A \<in> H \<or> B \<in> H) \<and>
-     (\<forall>A B. Neg (Impl A B) \<in> H \<longrightarrow> A \<in> H \<and> Neg B \<in> H) \<and>
-     (\<forall>P t. closedt 0 t \<longrightarrow> Forall P \<in> H \<longrightarrow> subst P t 0 \<in> H) \<and>
-     (\<forall>P t. closedt 0 t \<longrightarrow> Neg (Exists P) \<in> H \<longrightarrow> Neg (subst P t 0) \<in> H) \<and>
-     (\<forall>P. Exists P \<in> H \<longrightarrow> (\<exists>t. closedt 0 t \<and> subst P t 0 \<in> H)) \<and>
-     (\<forall>P. Neg (Forall P) \<in> H \<longrightarrow> (\<exists>t. closedt 0 t \<and> Neg (subst P t 0) \<in> H)))\<close>
+     (\<forall>A B. Con A B \<in> H \<longrightarrow> A \<in> H \<and> B \<in> H) \<and>
+     (\<forall>A B. Neg (Dis A B) \<in> H \<longrightarrow> Neg A \<in> H \<and> Neg B \<in> H) \<and>
+     (\<forall>A B. Dis A B \<in> H \<longrightarrow> A \<in> H \<or> B \<in> H) \<and>
+     (\<forall>A B. Neg (Con A B) \<in> H \<longrightarrow> Neg A \<in> H \<or> Neg B \<in> H) \<and>
+     (\<forall>x e ec. regexp_compl e ec \<longrightarrow> Member neg x e \<in> H \<longrightarrow> Member pos x ec \<in> H) \<and> 
+     (\<forall>x y f xs. EqAtom neg x (App f xs) \<in> H \<longrightarrow> EqFresh neg x y \<in> H \<and> EqFresh pos y (App f xs) \<in> H) \<and>
+     (\<forall>x e ec. regexp_compl e ec \<longrightarrow> Member pos x e \<in> H \<or> Member pos x ec \<in> H) \<and> 
+     (\<forall>x y e. Member pos x e \<in> H \<and> EqAtom pos x y \<in> H \<longrightarrow> Member pos x e \<in> H \<and> EqAtom pos x y \<in> H \<and> Member pos y e \<in> H) \<and> 
+     (\<forall> e1 e2 x y. regexp_empty e1 e2 \<longrightarrow> Member pos x e1 \<in> H \<and> EqAtom neg  x y \<in> H \<and> Member pos y e2 \<in> H \<longrightarrow> Member pos x e1 \<in> H \<and> Member pos y e2 \<in> H) \<and>
+     (\<forall> x y e. is_singleton (lang e) \<longrightarrow> Member pos x e \<in> H \<and> EqAtom pos x y \<in> H \<longrightarrow> Member pos x e \<in> H \<and> Member pos y e \<in> H) \<and> 
+     (\<forall> x y e ec. is_singleton (lang e) \<longrightarrow> regexp_compl e ec \<longrightarrow> Member pos x e \<in> H \<and> EqAtom neg  x y \<in> H \<longrightarrow> Member pos x e \<in> H \<and> Member pos y ec \<in> H) \<and> 
+     (\<forall> x rs. length rs > 1 \<longrightarrow> empty_intersection_set rs \<longrightarrow> ((\<lambda>r. Member pos x r) ` (set rs)) \<subseteq> H) \<and> 
+     (\<forall> x e fs. subset_intersect_set e fs \<longrightarrow> Member pos x e \<in> H \<and> ((\<lambda>r. Member pos x r)) ` (set fs) \<subseteq> H \<longrightarrow> ((\<lambda>r. Member pos x r)) ` (set fs) \<subseteq> H) \<and> 
+     (\<forall> x e fs. eq_len_intersect e fs \<longrightarrow>  ((\<lambda>r. Member pos x r)) ` (set fs) \<subseteq> H \<longrightarrow> Member pos x e \<in> H) \<and> 
+     (\<forall> x x1 x2 f e e1 e2. con_fwd_prop e e1 e2 \<longrightarrow> EqAtom pos x (App f [x1, x2]) \<in> H \<and> Member pos x1 e1 \<in> H \<and> Member pos x2 e2 \<in> H \<longrightarrow> Member pos x e \<in> H \<and> EqAtom pos x (App f [x1,x2]) \<in> H \<and> Member pos x1 e1 \<in> H \<and> Member pos x2 e2 \<in> H) \<and> 
+     (\<forall> x x1 x2 f e e1 e2. con_fwd_prop_elim e e1 e2 \<longrightarrow> EqAtom pos x (App f [x1, x2]) \<in> H \<and> Member pos (x1) e1 \<in> H \<and> Member pos (x2) e2 \<in> H \<longrightarrow> EqAtom pos x (App f [x1,x2]) \<in> H \<and> Member pos x e \<in> H \<and> Member pos (x1) e1 \<in> H \<and> Member pos (x2) e2 \<in> H))\<close>
 
 text \<open>
 In Herbrand models, each {\em closed} term is interpreted by itself.
