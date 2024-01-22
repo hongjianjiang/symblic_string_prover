@@ -949,22 +949,22 @@ be proved by well-founded induction on the size of the formula \<open>p\<close>.
 
 theorem hintikka_model:
   assumes hin: \<open>hintikka H\<close>
-  shows \<open>(p \<in> H \<longrightarrow>
-    eval e f p) \<and>
-  (Neg p \<in> H \<longrightarrow> 
-    eval e f (Neg p))\<close>
+  shows \<open>(p \<in> H \<longrightarrow> closed 0 p \<longrightarrow>
+    eval e HApp (\<lambda>a ts. Pred a (terms_of_hterms ts) \<in> H) p) \<and>
+  (Neg p \<in> H \<longrightarrow> closed 0 p \<longrightarrow>                                    
+    eval e HApp (\<lambda>a ts. Pred a (terms_of_hterms ts) \<in> H) (Neg p))\<close>
 proof (induct p rule: wf_induct [where r=\<open>measure size_form\<close>])
   show \<open>wf (measure size_form)\<close>
     by blast
 next
-  let ?eval = \<open>eval e f\<close>
+  let ?eval = \<open>eval e HApp (\<lambda>a ts. Pred a (terms_of_hterms ts) \<in> H)\<close>
 
   fix x
   assume wf: \<open>\<forall>y. (y, x) \<in> measure size_form \<longrightarrow>
-                  (y \<in> H \<longrightarrow> ?eval y) \<and>
-              (Neg y \<in> H \<longrightarrow> ?eval (Neg y))\<close>
+                  (y \<in> H \<longrightarrow> closed 0 y \<longrightarrow> ?eval y) \<and>
+              (Neg y \<in> H \<longrightarrow> closed 0 y \<longrightarrow> ?eval (Neg y))\<close>
 
-  show \<open>(x \<in> H \<longrightarrow> ?eval x) \<and> (Neg x \<in> H \<longrightarrow> ?eval (Neg x))\<close>
+  show \<open>(x \<in> H \<longrightarrow> closed 0 x \<longrightarrow> ?eval x) \<and> (Neg x \<in> H \<longrightarrow> closed 0 x \<longrightarrow> ?eval (Neg x))\<close>
   proof (cases x)
     case FF
     show ?thesis
@@ -989,11 +989,11 @@ next
         using TT hin by (simp add: hintikka_def)
     qed
   next
-    case (EqAtom x31 x32 x33)
+    case (Pred p ts)
     show ?thesis
     proof (intro conjI impI)
-      assume \<open>x \<in> H\<close>
-      then show \<open>?eval x\<close>  using EqAtom hin 
+      assume \<open>x \<in> H\<close> and \<open>closed 0 x\<close>
+      then show \<open>?eval x\<close> using Pred by simp
     next
       assume \<open>Neg x \<in> H\<close> and \<open>closed 0 x\<close>
       then have \<open>Neg (Pred p ts) \<in> H\<close>
