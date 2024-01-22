@@ -119,22 +119,26 @@ qed (auto simp: closedt_mono(1))
 
 section \<open>Semantics\<close>
 
-primrec semantics_tm and semantics_list where
-  \<open>semantics_tm e f (Var n) = e n\<close> |
-  \<open>semantics_tm e f (App i l) = f i (semantics_list e f l)\<close> |
-  \<open>semantics_list e f [] = []\<close> |
-  \<open>semantics_list e f (t # l) = semantics_tm e f t # semantics_list e f l\<close>
+
+primrec
+  evalt :: \<open>(nat \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'c list \<Rightarrow> 'c) \<Rightarrow> 'a tm \<Rightarrow> 'c\<close> and
+  evalts :: \<open>(nat \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'c list \<Rightarrow> 'c) \<Rightarrow> 'a tm list \<Rightarrow> 'c list\<close> where
+  \<open>evalt e f (Var n) = e n\<close>
+| \<open>evalt e f (App a ts) = f a (evalts e f ts)\<close>
+| \<open>evalts e f [] = []\<close>
+| \<open>evalts e f (t # ts) = evalt e f t # evalts e f ts\<close>
+
 
 fun concat_str :: "nat \<Rightarrow> string list \<Rightarrow> string" where
   "concat_str s ls = (if s = 1 then List.concat ls else [])"
 
-primrec semantics_fm (\<open>\<lbrakk>_, _\<rbrakk>\<close>) where
-  \<open>\<lbrakk>E, F\<rbrakk> (EqAtom s x y) = (if s = pos then semantics_tm E F x = semantics_tm E F y else semantics_tm E F x \<noteq> semantics_tm E F y)\<close> 
+primrec eval :: "(nat \<Rightarrow> 'a list) \<Rightarrow> ('b \<Rightarrow> 'a list list \<Rightarrow> 'a list) \<Rightarrow> ('b, 'a BA) form \<Rightarrow> bool" (\<open>\<lbrakk>_, _\<rbrakk>\<close>) where
+  \<open>\<lbrakk>E, F\<rbrakk> (EqAtom s x y) = (if s = pos then evalt E F x = evalt E F y else evalt E F x \<noteq> evalt E F y)\<close> 
 | \<open>\<lbrakk>E, F\<rbrakk> (EqFresh s x y) = True\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (ConcEq z x y) = (semantics_tm E F z = semantics_tm E F x @ semantics_tm E F y)\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (Member s x r) = (if s = pos then semantics_tm E F x \<in> lang r else semantics_tm E F x \<notin> lang r)\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (Dis x y) = (\<lbrakk>E, F\<rbrakk> x \<or> \<lbrakk>E, F\<rbrakk> y)\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (Con x y) = (\<lbrakk>E, F\<rbrakk> x \<and> \<lbrakk>E, F\<rbrakk> y)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (ConcEq z x y) = (evalt E F z = evalt E F x @ evalt E F y)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (Member s x r) = (if s = pos then evalt E F x \<in> lang r else evalt E F x \<notin> lang r)\<close> 
+| \<open>\<lbrakk>E, F\<rbrakk> (Dis x y) = (\<lbrakk>E, F\<rbrakk> x \<or> \<lbrakk>E, F\<rbrakk> y)\<close>
+| \<open>\<lbrakk>E, F\<rbrakk> (Con x y) = (\<lbrakk>E, F\<rbrakk> x \<and> \<lbrakk>E, F\<rbrakk> y)\<close>
 | \<open>\<lbrakk>E, F\<rbrakk> (Neg x) = (\<not> \<lbrakk>E, F\<rbrakk> x)\<close> 
 | \<open>\<lbrakk>E, F\<rbrakk> (FF) = False\<close> 
 | \<open>\<lbrakk>E, F\<rbrakk> (TT) = True\<close> 
@@ -232,7 +236,7 @@ proof (induct G rule: One_SC.induct)
 next
   case (Intersect e fs x \<Gamma>)
   then show ?case  apply auto 
-    by (smt (verit) INT_I image_subset_iff semantics_fm.simps(4) sup.cobounded1)
+    by (smt (verit) INT_I image_subset_iff eval.simps(4) sup.cobounded1)
 qed (auto simp:l_prod_elim is_singleton_def)
 
 (*next
@@ -913,8 +917,8 @@ closed terms and Herbrand terms.
 datatype 'a hterm = HApp 'a \<open>'a hterm list\<close>
 
 primrec
-  term_of_hterm :: \<open>'a hterm \<Rightarrow> 'a term\<close> and
-  terms_of_hterms :: \<open>'a hterm list \<Rightarrow> 'a term list\<close> where
+  term_of_hterm :: \<open>'a hterm \<Rightarrow> 'a tm\<close> and
+  terms_of_hterms :: \<open>'a hterm list \<Rightarrow> 'a tm list\<close> where
   \<open>term_of_hterm (HApp a hts) = App a (terms_of_hterms hts)\<close>
 | \<open>terms_of_hterms [] = []\<close>
 | \<open>terms_of_hterms (ht # hts) = term_of_hterm ht # terms_of_hterms hts\<close>
@@ -945,22 +949,22 @@ be proved by well-founded induction on the size of the formula \<open>p\<close>.
 
 theorem hintikka_model:
   assumes hin: \<open>hintikka H\<close>
-  shows \<open>(p \<in> H \<longrightarrow> closed 0 p \<longrightarrow>
-    eval e HApp (\<lambda>a ts. Pred a (terms_of_hterms ts) \<in> H) p) \<and>
-  (Neg p \<in> H \<longrightarrow> closed 0 p \<longrightarrow>
-    eval e HApp (\<lambda>a ts. Pred a (terms_of_hterms ts) \<in> H) (Neg p))\<close>
+  shows \<open>(p \<in> H \<longrightarrow>
+    eval e f p) \<and>
+  (Neg p \<in> H \<longrightarrow> 
+    eval e f (Neg p))\<close>
 proof (induct p rule: wf_induct [where r=\<open>measure size_form\<close>])
   show \<open>wf (measure size_form)\<close>
     by blast
 next
-  let ?eval = \<open>eval e HApp (\<lambda>a ts. Pred a (terms_of_hterms ts) \<in> H)\<close>
+  let ?eval = \<open>eval e f\<close>
 
   fix x
   assume wf: \<open>\<forall>y. (y, x) \<in> measure size_form \<longrightarrow>
-                  (y \<in> H \<longrightarrow> closed 0 y \<longrightarrow> ?eval y) \<and>
-              (Neg y \<in> H \<longrightarrow> closed 0 y \<longrightarrow> ?eval (Neg y))\<close>
+                  (y \<in> H \<longrightarrow> ?eval y) \<and>
+              (Neg y \<in> H \<longrightarrow> ?eval (Neg y))\<close>
 
-  show \<open>(x \<in> H \<longrightarrow> closed 0 x \<longrightarrow> ?eval x) \<and> (Neg x \<in> H \<longrightarrow> closed 0 x \<longrightarrow> ?eval (Neg x))\<close>
+  show \<open>(x \<in> H \<longrightarrow> ?eval x) \<and> (Neg x \<in> H \<longrightarrow> ?eval (Neg x))\<close>
   proof (cases x)
     case FF
     show ?thesis
@@ -985,11 +989,11 @@ next
         using TT hin by (simp add: hintikka_def)
     qed
   next
-    case (Pred p ts)
+    case (EqAtom x31 x32 x33)
     show ?thesis
     proof (intro conjI impI)
-      assume \<open>x \<in> H\<close> and \<open>closed 0 x\<close>
-      then show \<open>?eval x\<close> using Pred by simp
+      assume \<open>x \<in> H\<close>
+      then show \<open>?eval x\<close>  using EqAtom hin 
     next
       assume \<open>Neg x \<in> H\<close> and \<open>closed 0 x\<close>
       then have \<open>Neg (Pred p ts) \<in> H\<close>
