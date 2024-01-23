@@ -13,49 +13,123 @@ section \<open>Terms and formulae\<close>
 text \<open>
 \label{sec:tms} The datatypes of tms and formulae are defined as follows:
 \<close>
-datatype tm  = Var nat  |  Conc tm tm 
+type_synonym id = String.literal
 
-datatype sign = pos | neg
+datatype tm = Var id | Fn id "tm list" | Reg "char BA rexp"
 
-datatype ('a) form = 
-    FF
-  | TT
-  | EqAtom sign tm tm
-  | EqFresh sign tm tm
-  | Member sign tm "'a rexp"
-  | Dis "('a) form" "('a) form"
-  | Con "('a) form" "('a) form"
-  | Neg "('a) form"
+datatype 'a fm = Truth | Falsity | Atom 'a | Imp "'a fm" "'a fm" | Iff "'a fm" "'a fm" |
+    And "'a fm" "'a fm" | Or "'a fm" "'a fm" | Not "'a fm"
 
-primrec size_form :: \<open>('a) form \<Rightarrow> nat\<close> where
-  \<open>size_form FF = 0\<close>
-| \<open>size_form TT = 0\<close>
-| \<open>size_form (EqAtom s p q) = 0\<close>
-| \<open>size_form (EqFresh s p q) = 0\<close>
-| \<open>size_form (Member s p r) = 0\<close>
-| \<open>size_form (Dis p q) = size_form p + size_form q + 1\<close>
-| \<open>size_form (Con p q) = size_form p + size_form q + 1\<close>
-| \<open>size_form (Neg p) = size_form p + 1\<close>
+datatype fol = Rl id "tm list"
 
-section \<open>Semantics\<close>
+term "Atom (Rl (STR '':'') [Var STR ''x'', Reg One])"
+term "Atom (Rl (STR ''='') [Var STR ''z'', Fn i [Var STR ''x'', Var STR ''y'']])"
+
+datatype "thm" = Thm (concl: "fol fm")
+
+subsection \<open>Definition of rules and axioms\<close>
+
+abbreviation (input) "fail_thm \<equiv> Thm Truth"
+
+definition fol_equal :: "fol fm \<Rightarrow> fol fm \<Rightarrow> bool"
+where
+  "fol_equal p q \<equiv> p = q"
+
+definition zip_eq :: "tm list \<Rightarrow> tm list \<Rightarrow> fol fm list"
+where
+  "zip_eq l l' \<equiv> map (\<lambda>(t, t'). Atom (Rl (STR ''='') [t, t'])) (zip l l')"
+
+primrec occurs_in :: "id \<Rightarrow> tm \<Rightarrow> bool" and occurs_in_list :: "id \<Rightarrow> tm list \<Rightarrow> bool"
+where
+  "occurs_in i (Var x) = (i = x)" |
+  "occurs_in i (Fn _ l) = occurs_in_list i l" |
+  "occurs_in_list _ [] = False" |
+  "occurs_in_list i (h # t) = (occurs_in i h \<or> occurs_in_list i t)"
+
+primrec free_in :: "id \<Rightarrow> fol fm \<Rightarrow> bool"
+where
+  "free_in _ Truth = False" |
+  "free_in _ Falsity = False" |
+  "free_in i (Atom a) = (case a of Rl _ l \<Rightarrow> occurs_in_list i l)" |
+  "free_in i (Imp p q) = (free_in i p \<or> free_in i q)" |
+  "free_in i (Iff p q) = (free_in i p \<or> free_in i q)" |
+  "free_in i (And p q) = (free_in i p \<or> free_in i q)" |
+  "free_in i (Or p q) = (free_in i p \<or> free_in i q)" |
+  "free_in i (Not p) = free_in i p" 
+
+primrec equal_length :: "tm list \<Rightarrow> tm list \<Rightarrow> bool"
+where
+  "equal_length l [] = (case l of [] \<Rightarrow> True | _ # _ \<Rightarrow> False)" |
+  "equal_length l (_ # r') = (case l of [] \<Rightarrow> False | _ # l' \<Rightarrow> equal_length l' r')"
+
+subsection \<open>Semantics of first-order logic\<close>
+
+definition length2 :: "tm list \<Rightarrow> bool"
+where
+  "length2 l \<equiv> case l of [_,_] \<Rightarrow> True | _ \<Rightarrow> False"
+
+primrec \<comment> \<open>Semantics of terms\<close>
+  semantics_term :: "(id \<Rightarrow> 'a) \<Rightarrow> (id \<Rightarrow> 'a list \<Rightarrow> 'a) \<Rightarrow> tm \<Rightarrow> 'a" and
+  semantics_list :: "(id \<Rightarrow> 'a) \<Rightarrow> (id \<Rightarrow> 'a list \<Rightarrow> 'a) \<Rightarrow> tm list \<Rightarrow> 'a list"
+where
+  "semantics_term e _ (Var x) = e x" |
+  "semantics_term e f (Fn i l) = f i (semantics_list e f l)" |
+  "semantics_list _ _ [] = []" |
+  "semantics_list e f (t # l) = semantics_term e f t # semantics_list e f l"
+
+primrec \<comment> \<open>Semantics of formulas\<close>
+  semantics :: "(id \<Rightarrow> 'a) \<Rightarrow> (id \<Rightarrow> 'a list \<Rightarrow> 'a) \<Rightarrow> (id \<Rightarrow> 'a list \<Rightarrow> bool) \<Rightarrow> fol fm \<Rightarrow> bool"
+where
+  "semantics _ _ _ Truth = True" |
+  "semantics _ _ _ Falsity = False" |
+  "semantics e f g (Atom a) = (case a of Rl i l \<Rightarrow> if i = STR ''='' \<and> length2 l
+      then (semantics_term e f (hd l) = semantics_term e f (hd (tl l)))
+      else g i (semantics_list e f l))" |
+  "semantics e f g (Imp p q) = (semantics e f g p \<longrightarrow> semantics e f g q)" |
+  "semantics e f g (Iff p q) = (semantics e f g p \<longleftrightarrow> semantics e f g q)" |
+  "semantics e f g (And p q) = (semantics e f g p \<and> semantics e f g q)" |
+  "semantics e f g (Or p q) = (semantics e f g p \<or> semantics e f g q)" |
+  "semantics e f g (Not p) = (\<not> semantics e f g p)"
 
 
-primrec
-  evalt :: \<open>(nat \<Rightarrow> 'c) \<Rightarrow> ('c \<Rightarrow> 'c  \<Rightarrow> 'c) \<Rightarrow> tm \<Rightarrow> 'c\<close> where
-  \<open>evalt e f (Var n) = e n\<close>
-| \<open>evalt e f (Conc p q) = f (evalt e f p) (evalt e f q)\<close>
+subsection \<open>Definition of proof system\<close>
 
-primrec eval (\<open>\<lbrakk>_, _\<rbrakk>\<close>) where
-  \<open>\<lbrakk>E, F\<rbrakk> (EqAtom s x y) = (if s = pos then evalt E F x = evalt E F y else evalt E F x \<noteq> evalt E F y)\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (EqFresh s x y) = True\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (Member s x r) = (if s = pos then evalt E F x \<in> lang r else evalt E F x \<notin> lang r)\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (Dis x y) = (\<lbrakk>E, F\<rbrakk> x \<or> \<lbrakk>E, F\<rbrakk> y)\<close>
-| \<open>\<lbrakk>E, F\<rbrakk> (Con x y) = (\<lbrakk>E, F\<rbrakk> x \<and> \<lbrakk>E, F\<rbrakk> y)\<close>
-| \<open>\<lbrakk>E, F\<rbrakk> (Neg x) = (\<not> \<lbrakk>E, F\<rbrakk> x)\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (FF) = False\<close> 
-| \<open>\<lbrakk>E, F\<rbrakk> (TT) = True\<close> 
+definition addI :: "thm \<Rightarrow> thm \<Rightarrow> thm" where
+  "addI s s' \<equiv> let p = concl s in let p' = concl s' in Thm (And p p')"
 
-section \<open>Proof calculus\<close>
+definition neg_orI :: "thm \<Rightarrow> thm \<Rightarrow> thm" where
+  "neg_orI s s' \<equiv> case concl s of Not p \<Rightarrow>
+                 (case concl s' of Not q \<Rightarrow> Thm (Not (Or p q)) | _ \<Rightarrow> fail_thm)
+                  | _ \<Rightarrow> fail_thm"
+
+definition orI :: "thm \<Rightarrow> thm \<Rightarrow> thm" where
+  "orI s s' \<equiv> let p = concl s in let p' = concl s' in Thm (Or p p')"
+
+definition neg_andI :: "thm \<Rightarrow> thm \<Rightarrow> thm" where
+  "neg_andI s s' \<equiv>case concl s of Not p \<Rightarrow>
+                 (case concl s' of Not q \<Rightarrow> Thm (Not (And p q)) | _ \<Rightarrow> fail_thm)
+                  | _ \<Rightarrow> fail_thm"
+
+definition neg_negI :: "thm  \<Rightarrow> thm" where
+  "neg_negI s \<equiv> let p = concl s in Thm (Not (Not p))"
+
+definition not_memberI :: "thm  \<Rightarrow> thm" where
+  "not_memberI s \<equiv> case concl s of Atom p \<Rightarrow> case p of Rl i l \<Rightarrow> if i = STR '':'' \<and> length2 l
+      then  Thm (Atom (Rl STR ''~:'' l))
+      else  fail_thm | _ \<Rightarrow> fail_thm"
+
+inductive sequent :: "fol fm list \<Rightarrow> bool" ("\<turnstile> _" 0) where
+  andI: "\<turnstile> [concl s, concl s', \<Gamma>] \<Longrightarrow> \<turnstile> [concl (addI s s'), \<Gamma>]" |
+  neg_orI: "\<turnstile> [concl s, concl s', \<Gamma>] \<Longrightarrow> \<turnstile> [concl (neg_orI s s'), \<Gamma>]" |
+  orI: "\<turnstile> [concl s, \<Gamma>] \<Longrightarrow> \<turnstile> [concl s', \<Gamma>] \<Longrightarrow> \<turnstile> [concl (orI s s'), \<Gamma>]" |
+  neg_andI: "\<turnstile> [concl s, \<Gamma>] \<Longrightarrow> \<turnstile> [concl s', \<Gamma>] \<Longrightarrow> \<turnstile> [concl (neg_andI s s'), \<Gamma>]" |
+  neg_negI: "\<turnstile> [concl s, \<Gamma>] \<Longrightarrow> \<turnstile> [concl (neg_negI s), \<Gamma>]" |
+  not_memberI: "\<turnstile> [concl s, \<Gamma>] \<Longrightarrow> \<turnstile> [concl (not_memberI s), \<Gamma>]"
+
+
+
+
+
 
 fun is_Member :: "('a) form \<Rightarrow> bool" where 
   "is_Member (Member s x r)  = True"|
@@ -155,12 +229,12 @@ qed (auto simp:l_prod_elim is_singleton_def)
   case (Bwd_PropConc e es x1 x2 x \<Gamma>)
   then show ?case apply (auto simp:c_prod_def times_list_def) sorry*)
 
-definition One_SC_proof :: \<open>(char BA) form list \<Rightarrow> (char BA) form \<Rightarrow> bool\<close> where
-  \<open>One_SC_proof ps p \<equiv> (\<stileturn>  Neg p # ps)\<close>
+definition one_sc_proof :: \<open>(char BA) form list \<Rightarrow> (char BA) form \<Rightarrow> bool\<close> where
+  \<open>one_sc_proof ps p \<equiv> (\<stileturn>  Neg p # ps)\<close>
 
 theorem sc_soundness:
-  \<open>One_SC_proof ps p \<Longrightarrow> list_all \<lbrakk>E, (@)\<rbrakk> ps \<Longrightarrow> \<lbrakk>E, (@)\<rbrakk> p\<close>
-  using One_SC_soundness unfolding One_SC_proof_def list_all_def
+  \<open>one_sc_proof ps p \<Longrightarrow> list_all \<lbrakk>E, (@)\<rbrakk> ps \<Longrightarrow> \<lbrakk>E, (@)\<rbrakk> p\<close>
+  using One_SC_soundness unfolding one_sc_proof_def list_all_def
   by fastforce
 
 section \<open>Completeness\<close>  
@@ -188,6 +262,33 @@ definition consistency :: "(char BA) form set set \<Rightarrow> bool" where
               (\<forall> x x1 x2 e e1 e2. con_fwd_prop e e1 e2 \<longrightarrow> EqAtom pos x (Conc x1 x2) \<in> S \<and> Member pos x1 e1 \<in> S \<and> Member pos x2 e2 \<in> S \<longrightarrow> S \<union> {Member pos x e, EqAtom pos x (Conc x1 x2), Member pos x1 e1, Member pos x2 e2} \<in> C) \<and> 
               (\<forall> x x1 x2 e e1 e2. con_fwd_prop_elim e e1 e2 \<longrightarrow> EqAtom pos x (Conc x1 x2) \<in> S \<and> Member pos (x1) e1 \<in> S \<and> Member pos (x2) e2 \<in> S \<longrightarrow> S \<union> {EqAtom pos x (Conc x1 x2), Member pos x e, Member pos (x1) e1, Member pos (x2) e2} \<in> C) \<and> 
               (\<forall> S'. S' = S \<longrightarrow> S' \<in> C))"
+
+definition \<open>consistent S \<equiv> \<nexists>S'. set S' \<subseteq> S \<and> one_sc_proof S' FF\<close>
+
+
+lemma UN_finite_bound:
+  assumes \<open>finite A\<close> and \<open>A \<subseteq> (\<Union>n. f n)\<close>
+  shows \<open>\<exists>m :: nat. A \<subseteq> (\<Union>n \<le> m. f n)\<close>
+  using assms
+proof (induct rule: finite_induct)
+  case (insert x A)
+  then obtain m where \<open>A \<subseteq> (\<Union>n \<le> m. f n)\<close>
+    by fast
+  then have \<open>A \<subseteq> (\<Union>n \<le> (m + k). f n)\<close> for k
+    by fastforce
+  moreover obtain m' where \<open>x \<in> f m'\<close>
+    using insert(4) by blast
+  ultimately have \<open>{x} \<union> A \<subseteq> (\<Union>n \<le> m + m'. f n)\<close>
+    by auto
+  then show ?case
+    by blast
+qed simp
+
+lemma split_list:
+  assumes \<open>x \<in> set A\<close>
+  shows \<open>set (x # removeAll x A) = set A \<and> x \<notin> set (removeAll x A)\<close>
+  using assms by auto
+
 
 theorem consistent:
   assumes inf_param: \<open>infinite (UNIV::'a set)\<close>
@@ -389,7 +490,7 @@ subsection \<open>Completeness for Natural Deduction\<close>
 theorem One_SC_completeness':
   fixes p :: \<open>(char BA) form\<close>
   assumes  mod: \<open>\<forall>(e :: nat \<Rightarrow> string) f. list_all (eval e f) ps \<longrightarrow> eval e f p\<close>
-  shows \<open>One_SC_proof ps p\<close>
+  shows \<open>one_sc_proof ps p\<close>
   sorry
 
 
