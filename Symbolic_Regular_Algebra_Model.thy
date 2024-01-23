@@ -72,6 +72,24 @@ fun regexp_compl ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" wher
 fun regexp_empty ::"'a BA rexp \<Rightarrow> 'a BA rexp \<Rightarrow> bool" where 
   "regexp_empty r1 r2 = (lang r1 \<inter> lang r2 = {})"
 
+fun empty_intersection_set :: "'a BA rexp list \<Rightarrow> bool" where
+  "empty_intersection_set fs = (\<Inter>(lang ` set fs) = {})"
+
+fun subset_intersect_set :: "char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where 
+  "subset_intersect_set r fs = (\<Inter>(lang ` set fs) \<subseteq> lang r)"
+
+fun eq_len_intersect :: "char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where 
+  "eq_len_intersect r fs = (\<Inter>(lang ` set fs) = lang r \<and> length fs > 1)"
+
+fun con_fwd_prop ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> bool" where
+  "con_fwd_prop r r1 r2 = (lang r = lang (Times r1 r2))"
+
+fun con_fwd_prop_elim ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> bool" where
+  "con_fwd_prop_elim r e1 e2 = (lang r = lang (Times e1 e2) \<and> is_singleton (lang r))"
+
+fun con_bwd_prop ::" char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where
+  "con_bwd_prop r = {(a,b)|a b. lang r = (lang (Times a b))}"
+
 definition alpset :: "char list set set" where 
 "alpset \<equiv>  (lang ` (Pred ` {digit, lc, uc}))" 
 
