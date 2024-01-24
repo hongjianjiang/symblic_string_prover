@@ -94,24 +94,6 @@ where
 
 subsection \<open>Definition of proof system\<close>
 
-definition addI :: "thm \<Rightarrow> thm \<Rightarrow> thm" where
-  "addI s s' \<equiv> let p = concl s in let p' = concl s' in Thm (And p p')"
-
-definition neg_orI :: "thm \<Rightarrow> thm \<Rightarrow> thm" where
-  "neg_orI s s' \<equiv> case concl s of Not p \<Rightarrow>
-                 (case concl s' of Not q \<Rightarrow> Thm (Not (Or p q)) | _ \<Rightarrow> fail_thm)
-                  | _ \<Rightarrow> fail_thm"
-
-definition orI :: "thm \<Rightarrow> thm \<Rightarrow> thm" where
-  "orI s s' \<equiv> let p = concl s in let p' = concl s' in Thm (Or p p')"
-
-definition neg_andI :: "thm \<Rightarrow> thm \<Rightarrow> thm" where
-  "neg_andI s s' \<equiv>case concl s of Not p \<Rightarrow>
-                 (case concl s' of Not q \<Rightarrow> Thm (Not (And p q)) | _ \<Rightarrow> fail_thm)
-                  | _ \<Rightarrow> fail_thm"
-
-definition neg_negI :: "thm  \<Rightarrow> thm" where
-  "neg_negI s \<equiv> let p = concl s in Thm (Not (Not p))"
 
 definition not_memberI :: "thm  \<Rightarrow> thm" where
   "not_memberI s \<equiv> case concl s of Atom p \<Rightarrow> case p of Rl i l \<Rightarrow> if i = STR '':'' \<and> length2 l
@@ -119,13 +101,26 @@ definition not_memberI :: "thm  \<Rightarrow> thm" where
       else  fail_thm | _ \<Rightarrow> fail_thm"
 
 inductive sequent :: "fol fm list \<Rightarrow> bool" ("\<turnstile> _" 0) where
-  andI: "\<turnstile> [concl s, concl s', \<Gamma>] \<Longrightarrow> \<turnstile> [concl (addI s s'), \<Gamma>]" |
-  neg_orI: "\<turnstile> [concl s, concl s', \<Gamma>] \<Longrightarrow> \<turnstile> [concl (neg_orI s s'), \<Gamma>]" |
-  orI: "\<turnstile> [concl s, \<Gamma>] \<Longrightarrow> \<turnstile> [concl s', \<Gamma>] \<Longrightarrow> \<turnstile> [concl (orI s s'), \<Gamma>]" |
-  neg_andI: "\<turnstile> [concl s, \<Gamma>] \<Longrightarrow> \<turnstile> [concl s', \<Gamma>] \<Longrightarrow> \<turnstile> [concl (neg_andI s s'), \<Gamma>]" |
-  neg_negI: "\<turnstile> [concl s, \<Gamma>] \<Longrightarrow> \<turnstile> [concl (neg_negI s), \<Gamma>]" |
-  not_memberI: "\<turnstile> [concl s, \<Gamma>] \<Longrightarrow> \<turnstile> [concl (not_memberI s), \<Gamma>]"
-
+  andI: "\<turnstile> [p, p'] @ \<Gamma> \<Longrightarrow> \<turnstile> [(And p p')] @ \<Gamma>" |
+  neg_orI: "\<turnstile> [Not p, Not p'] @ \<Gamma> \<Longrightarrow> \<turnstile> [Not (Or p p')] @ \<Gamma>" |
+  orI: "\<turnstile> [p] @ \<Gamma> \<Longrightarrow> \<turnstile> [p'] @ \<Gamma> \<Longrightarrow> \<turnstile> [Or p p'] @ \<Gamma>" |
+  neg_andI: "\<turnstile> [Not p] @ \<Gamma> \<Longrightarrow> \<turnstile> [Not p'] @ \<Gamma> \<Longrightarrow> \<turnstile> [Not (And p p')] @ \<Gamma>" |
+  neg_negI: "\<turnstile> [p] @ \<Gamma> \<Longrightarrow> \<turnstile> [Not (Not p)] @ \<Gamma>" |
+  not_memberI: "regexp_compl e ec \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma> \<Longrightarrow>
+                \<turnstile> [Atom (Rl STR ''~:'' [x, Reg ec])] @ \<Gamma>" |
+  not_eq: "\<not> occurs_in_list y (x#xs) \<Longrightarrow> \<turnstile> [Atom (Rl STR ''~='' [x,Var y]), Atom (Rl STR ''='' [Var y, Fn i xs])] @ \<Gamma> \<Longrightarrow> 
+           \<turnstile> [Atom (Rl STR ''~='' [x, Fn i xs])] @ \<Gamma>" |
+  cut: "regexp_compl e ec \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma> \<Longrightarrow> \<turnstile> [Atom (RL STR '':'' [x, Reg ec])] @ \<Gamma> \<Longrightarrow> \<turnstile> \<Gamma>" |
+  eq_prop: "\<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y]), Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma>  \<Longrightarrow>
+            \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y])] @ \<Gamma>" | 
+  neq_subsume: "regexp_empty e1 e2 \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e1]), Atom (Rl STR '':'' [y, Reg e2])] @ \<Gamma> 
+            \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e1]), Atom (Rl STR ''~='' [x, y]), Atom (Rl STR '':'' [y, Reg e2])] @ \<Gamma>" |
+  eq_prop_elim : "is_singleton (lang e) \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR '':'' [y, Reg e])] @ \<Gamma> \<Longrightarrow>
+                  \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y])]" |
+  neq_prop_elim : "is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow>  \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR '':'' [y, Reg ec])] @ \<Gamma> \<Longrightarrow>
+                  \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''~='' [x, y])]" | 
+  close: "empty_intersection_set es \<Longrightarrow> \<turnstile> map (\<lambda>e. (Atom (Rl STR '':'' [x, Reg e]))) es @ \<Gamma> " | 
+  subsume: ""
 
 
 
