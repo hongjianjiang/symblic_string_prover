@@ -15,7 +15,7 @@ text \<open>
 \<close>
 type_synonym id = String.literal
 
-datatype tm = Var id | Fn id "tm list" | Reg "char BA rexp"
+datatype tm = Var id | Fn id "tm list" | Reg (regcl: "char BA rexp")
 
 datatype 'a fm = Truth | Falsity | Atom 'a | Imp "'a fm" "'a fm" | Iff "'a fm" "'a fm" |
     And "'a fm" "'a fm" | Or "'a fm" "'a fm" | Not "'a fm"
@@ -69,21 +69,29 @@ where
   "length2 l \<equiv> case l of [_,_] \<Rightarrow> True | _ \<Rightarrow> False"
 
 primrec \<comment> \<open>Semantics of terms\<close>
-  semantics_term :: "(id \<Rightarrow> 'a) \<Rightarrow> (id \<Rightarrow> 'a list \<Rightarrow> 'a) \<Rightarrow> tm \<Rightarrow> 'a" and
-  semantics_list :: "(id \<Rightarrow> 'a) \<Rightarrow> (id \<Rightarrow> 'a list \<Rightarrow> 'a) \<Rightarrow> tm list \<Rightarrow> 'a list"
+  semantics_term :: "(id \<Rightarrow> char list) \<Rightarrow> (id \<Rightarrow> char list set list \<Rightarrow> char list set) \<Rightarrow> tm \<Rightarrow> char list set" and
+  semantics_list :: "(id \<Rightarrow> char list) \<Rightarrow> (id \<Rightarrow> char list set list \<Rightarrow> char list set) \<Rightarrow> tm list \<Rightarrow> char list set list"
 where
-  "semantics_term e _ (Var x) = e x" |
+  "semantics_term e _ (Var x) = {e x}" |
+  "semantics_term e _ (Reg r) = lang r" |
   "semantics_term e f (Fn i l) = f i (semantics_list e f l)" |
   "semantics_list _ _ [] = []" |
   "semantics_list e f (t # l) = semantics_term e f t # semantics_list e f l"
 
 primrec \<comment> \<open>Semantics of formulas\<close>
-  semantics :: "(id \<Rightarrow> 'a) \<Rightarrow> (id \<Rightarrow> 'a list \<Rightarrow> 'a) \<Rightarrow> (id \<Rightarrow> 'a list \<Rightarrow> bool) \<Rightarrow> fol fm \<Rightarrow> bool"
+  semantics ::
+    "(id \<Rightarrow> char list)  \<Rightarrow> (id \<Rightarrow> char list set list \<Rightarrow> char list set) \<Rightarrow> (id \<Rightarrow> char list set list \<Rightarrow> bool) \<Rightarrow> fol fm \<Rightarrow> bool"
 where
   "semantics _ _ _ Truth = True" |
   "semantics _ _ _ Falsity = False" |
   "semantics e f g (Atom a) = (case a of Rl i l \<Rightarrow> if i = STR ''='' \<and> length2 l
       then (semantics_term e f (hd l) = semantics_term e f (hd (tl l)))
+      else if i = STR ''~='' \<and> length2 l  
+      then (semantics_term e f (hd l) \<noteq> semantics_term e f (hd (tl l)))
+      else if i = STR '':'' \<and> length2 l  
+      then (semantics_term e f (hd l) \<subseteq> semantics_term e f (hd (tl l)))
+      else if i = STR ''~:'' \<and> length2 l  
+      then \<not> (semantics_term e f (hd l) \<subseteq> semantics_term e f (hd (tl l)))
       else g i (semantics_list e f l))" |
   "semantics e f g (Imp p q) = (semantics e f g p \<longrightarrow> semantics e f g q)" |
   "semantics e f g (Iff p q) = (semantics e f g p \<longleftrightarrow> semantics e f g q)" |
@@ -100,125 +108,368 @@ definition not_memberI :: "thm  \<Rightarrow> thm" where
       then  Thm (Atom (Rl STR ''~:'' l))
       else  fail_thm | _ \<Rightarrow> fail_thm"
 
-inductive sequent :: "fol fm list \<Rightarrow> bool" ("\<turnstile> _" 0) where
-  andI: "\<turnstile> [p, p'] @ \<Gamma> \<Longrightarrow> \<turnstile> [(And p p')] @ \<Gamma>" |
-  neg_orI: "\<turnstile> [Not p, Not p'] @ \<Gamma> \<Longrightarrow> \<turnstile> [Not (Or p p')] @ \<Gamma>" |
-  orI: "\<turnstile> [p] @ \<Gamma> \<Longrightarrow> \<turnstile> [p'] @ \<Gamma> \<Longrightarrow> \<turnstile> [Or p p'] @ \<Gamma>" |
-  neg_andI: "\<turnstile> [Not p] @ \<Gamma> \<Longrightarrow> \<turnstile> [Not p'] @ \<Gamma> \<Longrightarrow> \<turnstile> [Not (And p p')] @ \<Gamma>" |
-  neg_negI: "\<turnstile> [p] @ \<Gamma> \<Longrightarrow> \<turnstile> [Not (Not p)] @ \<Gamma>" |
-  not_memberI: "regexp_compl e ec \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma> \<Longrightarrow>
-                \<turnstile> [Atom (Rl STR ''~:'' [x, Reg ec])] @ \<Gamma>" |
-  not_eq: "\<not> occurs_in_list y (x#xs) \<Longrightarrow> \<turnstile> [Atom (Rl STR ''~='' [x,Var y]), Atom (Rl STR ''='' [Var y, Fn i xs])] @ \<Gamma> \<Longrightarrow> 
-           \<turnstile> [Atom (Rl STR ''~='' [x, Fn i xs])] @ \<Gamma>" |
-  cut: "regexp_compl e ec \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma> \<Longrightarrow> \<turnstile> [Atom (RL STR '':'' [x, Reg ec])] @ \<Gamma> \<Longrightarrow> \<turnstile> \<Gamma>" |
-  eq_prop: "\<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y]), Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma>  \<Longrightarrow>
-            \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y])] @ \<Gamma>" | 
-  neq_subsume: "regexp_empty e1 e2 \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e1]), Atom (Rl STR '':'' [y, Reg e2])] @ \<Gamma> 
-            \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e1]), Atom (Rl STR ''~='' [x, y]), Atom (Rl STR '':'' [y, Reg e2])] @ \<Gamma>" |
-  eq_prop_elim : "is_singleton (lang e) \<Longrightarrow> \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR '':'' [y, Reg e])] @ \<Gamma> \<Longrightarrow>
-                  \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y])]" |
-  neq_prop_elim : "is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow>  \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR '':'' [y, Reg ec])] @ \<Gamma> \<Longrightarrow>
-                  \<turnstile> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''~='' [x, y])]" | 
-  close: "empty_intersection_set es \<Longrightarrow> \<turnstile> map (\<lambda>e. (Atom (Rl STR '':'' [x, Reg e]))) es @ \<Gamma> " | 
-  subsume: ""
-
-
-
-
-
-fun is_Member :: "('a) form \<Rightarrow> bool" where 
-  "is_Member (Member s x r)  = True"|
-  "is_Member _ = False"
-
-fun variable_in_member :: "('a) form \<Rightarrow> tm option" where 
-  "variable_in_member (Member s x r) = Some x"|
-  "variable_in_member _ = None"
-
-fun rexp_in_member :: "('b) form \<Rightarrow> 'b rexp" where 
-  "rexp_in_member (Member s x r) = r"
-
-definition "distinct_variable  ls = distinct (map (variable_in_member) ls)"
-
-definition "single_word ls = (List.find (\<lambda>r. \<not> is_singleton (lang r)) (map (rexp_in_member) ls) = None)"
-
-fun exists_solution :: "(char BA) form list \<Rightarrow> bool" where
-  "exists_solution ls = (if ls = [] then False 
-                       else list_all is_Member ls \<and> distinct_variable ls \<and> single_word ls)"  
-
-fun empty_intersection_set :: "char BA rexp list \<Rightarrow> bool" where
-  "empty_intersection_set fs = (\<Inter>(lang ` set fs) = {})"
-
-fun subset_intersect_set :: "char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where 
-  "subset_intersect_set r fs = (\<Inter>(lang ` set fs) \<subseteq> lang r)"
-
-fun eq_len_intersect :: "char BA rexp \<Rightarrow> char BA rexp list \<Rightarrow> bool" where 
-  "eq_len_intersect r fs = (\<Inter>(lang ` set fs) = lang r \<and> length fs > 1)"
-
-fun member_var_rexp :: "nat list \<Rightarrow> char BA rexp list \<Rightarrow> (char BA) form list" where 
-  "member_var_rexp [] b = []"|
-  "member_var_rexp (v # va) [] = []"|
-  "member_var_rexp (x#xs) (y#ys) = (if (length xs = length ys) then (Member pos (Var x) y) # (member_var_rexp xs ys) else [])"
-
-fun con_fwd_prop ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> bool" where
-  "con_fwd_prop r r1 r2 = (lang r = lang (Times r1 r2))"
-
-fun con_fwd_prop_elim ::"char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> char BA rexp \<Rightarrow> bool" where
-  "con_fwd_prop_elim r e1 e2 = (lang r = lang (Times e1 e2) \<and> is_singleton (lang r))"
-
-fun con_bwd_prop ::" char BA rexp \<Rightarrow> (char BA rexp * char BA rexp) set" where
-  "con_bwd_prop r = {(a,b)|a b. lang r = (lang (Times a b))}"
-
-
-inductive One_SC :: \<open>(char BA) form list \<Rightarrow> bool\<close> (\<open>\<stileturn> _\<close> 0) where
-  AlphaCon:      \<open>\<stileturn> [A,B] @ \<Gamma> \<Longrightarrow> \<stileturn> [Con A B] @ \<Gamma>\<close>
-| AlphaNegOr:    \<open>\<stileturn> [Neg A, Neg B] @\<Gamma> \<Longrightarrow> \<stileturn> Neg (Dis A B)# \<Gamma>\<close>
-| AlphaOr:       \<open>\<stileturn> A# \<Gamma> \<Longrightarrow> \<stileturn> B# \<Gamma> \<Longrightarrow> \<stileturn> Dis A B # \<Gamma>\<close>
-| AlphaNegAnd:   \<open>\<stileturn> Neg A # \<Gamma> \<Longrightarrow>  \<stileturn> Neg B # \<Gamma> \<Longrightarrow> \<stileturn> Neg (Con A B) # \<Gamma>\<close>
-| AlphaNegNeg:   \<open>\<stileturn> A# \<Gamma> \<Longrightarrow> \<stileturn> Neg (Neg A) # \<Gamma>\<close>
-| NotMember:     \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> (Member pos x ec) # \<Gamma> \<Longrightarrow> \<stileturn> (Member neg x e) # \<Gamma>\<close>
-| NotEq:         \<open>\<stileturn> [EqFresh neg x y,  EqFresh pos y (Conc x1 x2)] @ \<Gamma> \<Longrightarrow> \<stileturn> [EqAtom neg x (Conc x1 x2)]  @ \<Gamma>\<close>
-| Cut:           \<open>regexp_compl e ec \<Longrightarrow> \<stileturn> Member pos x e # \<Gamma> \<Longrightarrow>  \<stileturn> Member pos x ec # \<Gamma> \<Longrightarrow>  \<stileturn> \<Gamma>\<close>
-| EqProp:        \<open>\<stileturn> Member pos x e # EqAtom pos x y # Member pos y e # \<Gamma> \<Longrightarrow> \<stileturn> Member pos x e # EqAtom pos x y # \<Gamma>\<close>
-| NeqSubsume:    \<open>regexp_empty e1 e2 \<Longrightarrow> \<stileturn> Member pos x e1 # Member pos y e2 # \<Gamma> \<Longrightarrow> \<stileturn> Member pos x e1 # EqAtom neg x y # Member pos y e2 # \<Gamma>\<close>
-| EqPropElim:    \<open>is_singleton (lang e) \<Longrightarrow> \<stileturn> Member pos x e # Member pos y e # \<Gamma>\<Longrightarrow> \<stileturn> Member pos x e # (EqAtom pos x y) # \<Gamma>\<close>
-| NeqPropElim:   \<open>is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow> \<stileturn> (Member pos x e) # (Member pos y ec) # \<Gamma> \<Longrightarrow>  
-                 \<stileturn> (Member pos x e) # (EqAtom neg x y) # \<Gamma>\<close>
-| Close:         \<open>length rs > 1 \<Longrightarrow> empty_intersection_set rs \<Longrightarrow> \<stileturn> (map (\<lambda>r. Member pos x r) rs) @ \<Gamma>\<close> 
-| Subsume:       \<open>subset_intersect_set e fs \<Longrightarrow> \<stileturn> (map (\<lambda>r. Member pos x r) fs) @ \<Gamma> \<Longrightarrow> \<stileturn> Member pos x e # (map (\<lambda>r. Member pos x r) fs) @ \<Gamma>\<close> 
-| Intersect:     \<open>eq_len_intersect e fs \<Longrightarrow> \<stileturn> Member pos x e # \<Gamma>  \<Longrightarrow>  \<stileturn> (map (\<lambda>r. Member pos x r) (fs)) @ \<Gamma>\<close> 
-| Fwd_PropConc:  \<open>con_fwd_prop e e1 e2 \<Longrightarrow> \<stileturn> [(Member pos x e), (EqAtom pos x (Conc x1 x2)), (Member pos (x1) e1), (Member pos (x2) e2)] @ \<Gamma>
-                 \<Longrightarrow> \<stileturn> [(EqAtom pos x (Conc x1 x2)), (Member pos x1 e1), (Member pos x2 e2)] @ \<Gamma>\<close>  
-| Fwd_ElimConc:  \<open>con_fwd_prop_elim e e1 e2 \<Longrightarrow> \<stileturn> [Member pos x e, (Member pos (x1) e1), (Member pos (x2) e2)]  @ \<Gamma> \<Longrightarrow>  
-                 \<stileturn> [(EqAtom pos x (Conc x1 x2)), (Member pos (x1) e1), (Member pos (x2) e2)] @ \<Gamma>\<close>
-(*| Bwd_PropConc:  \<open>con_bwd_prop e = es \<Longrightarrow> \<stileturn> ((\<lambda>r. [Member x e, EqAtom x (App 1 [x1,x2]), Member (x1) (fst r), Member (x2) (snd r)] @ \<Gamma>) ` es) \<Longrightarrow> 
-                 \<stileturn> {[Member x e, EqAtom x (App 1 [x1,x2])] @ \<Gamma>}\<close>*)
-| Order:         \<open>\<stileturn> G \<Longrightarrow> set G = set G' \<Longrightarrow> \<stileturn> G'\<close>
-| Basic:         \<open>\<stileturn> [A,Neg A, G]\<close>
-
-
-declare One_SC.intros [intro]
+inductive sequent :: "fol fm list \<Rightarrow> bool" ("\<stileturn> _" 0) where
+  andI: "\<stileturn> [p, p'] @ \<Gamma> \<Longrightarrow> \<stileturn> [(And p p')] @ \<Gamma>" |
+  neg_orI: "\<stileturn> [Not p, Not p'] @ \<Gamma> \<Longrightarrow> \<stileturn> [Not (Or p p')] @ \<Gamma>" |
+  orI: "\<stileturn> [p] @ \<Gamma> \<Longrightarrow> \<stileturn> [p'] @ \<Gamma> \<Longrightarrow> \<stileturn> [Or p p'] @ \<Gamma>" |
+  neg_andI: "\<stileturn> [Not p] @ \<Gamma> \<Longrightarrow> \<stileturn> [Not p'] @ \<Gamma> \<Longrightarrow> \<stileturn> [Not (And p p')] @ \<Gamma>" |
+  neg_negI: "\<stileturn> [p] @ \<Gamma> \<Longrightarrow> \<stileturn> [Not (Not p)] @ \<Gamma>" |
+  not_memberI: "regexp_compl e ec \<Longrightarrow> \<stileturn> [Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma> \<Longrightarrow>
+                \<stileturn> [Atom (Rl STR ''~:'' [x, Reg ec])] @ \<Gamma>" |
+  not_eq: "\<not> occurs_in_list y (x#xs) \<Longrightarrow> \<stileturn> [Atom (Rl STR ''~='' [x,Var y]), Atom (Rl STR ''='' [Var y, Fn i xs])] @ \<Gamma> \<Longrightarrow> 
+           \<stileturn> [Atom (Rl STR ''~='' [x, Fn i xs])] @ \<Gamma>" |
+  cut: "regexp_compl e ec \<Longrightarrow> \<stileturn> [Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma> \<Longrightarrow> \<stileturn> [Atom (RL STR '':'' [x, Reg ec])] @ \<Gamma> \<Longrightarrow> \<stileturn> \<Gamma>" |
+  eq_prop: "\<stileturn> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y]), Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma>  \<Longrightarrow>
+            \<stileturn> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y])] @ \<Gamma>" | 
+  neq_subsume: "regexp_empty e1 e2 \<Longrightarrow> \<stileturn> [Atom (Rl STR '':'' [x, Reg e1]), Atom (Rl STR '':'' [y, Reg e2])] @ \<Gamma> 
+            \<Longrightarrow> \<stileturn> [Atom (Rl STR '':'' [x, Reg e1]), Atom (Rl STR ''~='' [x, y]), Atom (Rl STR '':'' [y, Reg e2])] @ \<Gamma>" |
+  eq_prop_elim : "is_singleton (lang e) \<Longrightarrow> \<stileturn> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR '':'' [y, Reg e])] @ \<Gamma> \<Longrightarrow>
+                  \<stileturn> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, y])]" |
+  neq_prop_elim : "is_singleton (lang e) \<Longrightarrow> regexp_compl e ec \<Longrightarrow>  \<stileturn> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR '':'' [y, Reg ec])] @ \<Gamma> \<Longrightarrow>
+                  \<stileturn> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''~='' [x, y])]" | 
+  close: "empty_intersection_set es \<Longrightarrow> \<stileturn> map (\<lambda>e. (Atom (Rl STR '':'' [x, Reg e]))) es @ \<Gamma> " | 
+  subsume: "subset_intersect_set e es \<Longrightarrow> \<stileturn> map (\<lambda>r. Atom (Rl STR '':'' [x, Reg r])) es @ \<Gamma> \<Longrightarrow> 
+           \<stileturn> Atom (Rl STR '':'' [x, Reg e]) # (map (\<lambda>r. Atom (Rl STR '':'' [x, Reg r])) es) @ \<Gamma>" |
+  intersect: "eq_len_intersect e es \<Longrightarrow> \<stileturn> [Atom (Rl STR '':'' [x, Reg e])] @ \<Gamma> \<Longrightarrow> 
+             \<stileturn> map (\<lambda>r. Atom (Rl STR '':'' [x, Reg r])) es @ \<Gamma>" |
+  fwd_prop: "con_fwd_prop e e1 e2 \<Longrightarrow> \<stileturn> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR ''='' [x, Fn i [x1,x2]]), 
+             Atom (Rl STR '':'' [x1, Reg e1]), Atom (Rl STR '':'' [x2, Reg e2])] @ \<Gamma> \<Longrightarrow>
+             \<stileturn> [Atom (Rl STR ''='' [x, Fn i [x1,x2]]), 
+             Atom (Rl STR '':'' [x1, Reg e1]), Atom (Rl STR '':'' [x2, Reg e2])] @ \<Gamma>" |
+  fwd_prop_elim: "con_fwd_prop_elim e e1 e2 \<Longrightarrow> \<stileturn> [Atom (Rl STR '':'' [x, Reg e]), Atom (Rl STR '':'' [x1, Reg e1]), Atom (Rl STR '':'' [x1, Reg e2])] @ \<Gamma> \<Longrightarrow>
+                 \<stileturn> [Atom (Rl STR ''='' [x, Fn i [x1,x2]]), Atom (Rl STR '':'' [x1, Reg e1]), Atom (Rl STR '':'' [x1, Reg e2])] @ \<Gamma>"
+  
+declare sequent.intros [intro]
 
 section \<open>Soundness\<close>
 
-lemma aux_close : "Suc 0 < |rs| \<Longrightarrow>  \<Inter> (Symbolic_Regular_Algebra_Model.lang ` set rs) = {} \<Longrightarrow> \<exists>p\<in>Member pos x ` set rs . \<not> \<lbrakk>E, \<lambda>a b. a @ b\<rbrakk> p"
-  apply auto
-  done
+value "e(x := v)"
+lemma map':
+  "\<not> occurs_in x t \<Longrightarrow> semantics_term e f t = semantics_term (e(x := v)) f t"
+  "\<not> occurs_in_list x l \<Longrightarrow> semantics_list e f l = semantics_list (e(x := v)) f l"
+by (induct t and l rule: semantics_term.induct semantics_list.induct) simp_all
 
-lemma One_SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<exists>p \<in> set G. \<not> \<lbrakk>E, (@)\<rbrakk> p)\<close>
-proof (induct G rule: One_SC.induct)
-  case (Close rs x \<Gamma>)
-  then show ?case apply auto
-  proof -
-    assume a1:"Suc 0 < |rs|" and a2:"\<Inter> (Symbolic_Regular_Algebra_Model.lang ` set rs) = {}"
-    then have "\<exists>p\<in>Member pos x ` set rs. \<not> \<lbrakk>E, (@)\<rbrakk> p" by auto
-    then show "\<exists>p\<in>Member pos x ` set rs \<union> set \<Gamma>. \<not> \<lbrakk>E, (@)\<rbrakk> p" 
-      by blast
-  qed
+lemma map:
+  "\<not> free_in x p \<Longrightarrow> semantics e f g p \<longleftrightarrow> semantics (e(x := v)) f g p"
+proof (induct p arbitrary: e)
+  fix e
+  show "\<not> free_in x Truth \<Longrightarrow> semantics e f g Truth \<longleftrightarrow> semantics (e(x := v)) f g Truth"
+  by simp
 next
-  case (Intersect e fs x \<Gamma>)
-  then show ?case  apply auto 
-    by (metis INT_I eval.simps(3) image_subset_iff sup.cobounded1)
-qed (auto simp:l_prod_elim is_singleton_def)
+  fix e
+  show "\<not> free_in x Falsity \<Longrightarrow> semantics e f g Falsity \<longleftrightarrow> semantics (e(x := v)) f g Falsity"
+  by simp
+next
+  fix a e
+  show "\<not> free_in x (Atom a) \<Longrightarrow> semantics e f g (Atom a) \<longleftrightarrow> semantics (e(x := v)) f g (Atom a)"
+  proof (cases a)
+    fix i l
+    show "\<not> free_in x (Atom a) \<Longrightarrow> a = Rl i l \<Longrightarrow>
+        semantics e f g (Atom a) \<longleftrightarrow> semantics (e(x := v)) f g (Atom a)"
+    proof -
+      assume assm: "\<not> free_in x (Atom a)" "a = Rl i l"
+      then have fresh: "\<not> occurs_in_list x l"
+      by simp
+      show "semantics e f g (Atom a) \<longleftrightarrow> semantics (e(x := v)) f g (Atom a)"
+      proof cases
+        assume eq: "i = STR ''='' \<and> length2 l"
+        then have "semantics e f g (Atom (Rl i l)) \<longleftrightarrow>
+            semantics_term e f (hd l) = semantics_term e f (hd (tl l))"
+        by simp
+        also have "... \<longleftrightarrow>
+            semantics_term (e(x := v)) f (hd l) = semantics_term (e(x := v)) f (hd (tl l))"
+        using map'(1) fresh occurs_in_list.simps(2) eq list.case_eq_if list.collapse
+        unfolding length2_def
+        by metis
+        finally show ?thesis
+        using eq assm(2)
+        by simp
+      next
+        assume not_eq: "\<not> (i = STR ''='' \<and> length2 l)"
+        then show ?thesis 
+        proof cases  
+          assume neq: "i = STR ''~='' \<and> length2 l"
+        then have "semantics e f g (Atom (Rl i l))  \<longleftrightarrow>
+            semantics_term e f (hd l) \<noteq> semantics_term e f (hd (tl l))"
+        by simp
+        also have "...  \<longleftrightarrow>
+            semantics_term (e(x := v)) f (hd l) \<noteq> semantics_term (e(x := v)) f (hd (tl l))"
+        using map'(2) fresh 
+        by (metis length2_def list.case_eq_if list.split_sel_asm map'(1) neq occurs_in_list.simps(2))
+        finally show ?thesis 
+          by (simp add: assm(2) neq)
+      next 
+        assume neq1: "\<not> (i = STR ''='' \<and> length2 l)" and
+               neg2: "\<not> (i = STR ''~='' \<and> length2 l) "
+        then show ?thesis 
+        proof cases 
+          assume mem: "i = STR '':'' \<and> length2 l"
+          then have "semantics e f g (Atom (Rl i l))  \<longleftrightarrow>
+            semantics_term e f (hd l) \<subseteq> semantics_term e f (hd (tl l))"
+            by simp
+          also have "...  \<longleftrightarrow>
+            semantics_term (e(x := v)) f (hd l) \<subseteq> semantics_term (e(x := v)) f (hd (tl l))"
+            by (metis fresh length2_def list.case_eq_if list.collapse map'(1) mem occurs_in_list.simps(2))
+          finally show ?thesis 
+            by (simp add: assm(2) mem)
+        next 
+          assume 1: "\<not> (i = STR ''='' \<and> length2 l)" and 2:" \<not> (i = STR ''~='' \<and> length2 l)" and 3 :"\<not> (i = STR '':'' \<and> length2 l)"
+          then show ?thesis 
+          proof cases 
+            assume nmem: "i = STR ''~:'' \<and> length2 l"
+            then have "semantics e f g (Atom (Rl i l))  \<longleftrightarrow>
+            \<not> (semantics_term e f (hd l) \<subseteq> semantics_term e f (hd (tl l)))"
+            by simp
+          also have "...  \<longleftrightarrow>
+            \<not> (semantics_term (e(x := v)) f (hd l) \<subseteq> semantics_term (e(x := v)) f (hd (tl l)))"
+            by (metis fresh length2_def list.case_eq_if list.collapse map'(1) nmem occurs_in_list.simps(2))
+          finally show ?thesis 
+            by (simp add: assm(2) nmem)
+        next 
+          assume not_eq: "\<not> (i = STR ''='' \<and> length2 l)" and 2:"\<not> (i = STR ''~='' \<and> length2 l)" and 3:"\<not> (i = STR '':'' \<and> length2 l)" and 4:"\<not> (i = STR ''~:'' \<and> length2 l)"
+
+        then have "semantics e f g (Atom (Rl i l)) \<longleftrightarrow> g i (semantics_list e f l)"
+        by simp iprover
+        also have "... \<longleftrightarrow> g i (semantics_list (e(x := v)) f l)"
+        using map'(2) fresh
+        by metis
+        finally show ?thesis 
+          by (simp add: "3" "4" assm(2) local.not_eq neg2)
+        qed
+      qed
+    qed
+  qed
+qed 
+qed
+next
+  fix p1 p2 e
+  assume assm1: "\<not> free_in x p1 \<Longrightarrow> semantics e f g p1 \<longleftrightarrow> semantics (e(x := v)) f g p1" for e
+  assume assm2: "\<not> free_in x p2 \<Longrightarrow> semantics e f g p2 \<longleftrightarrow> semantics (e(x := v)) f g p2" for e
+  show "\<not> free_in x (Imp p1 p2) \<Longrightarrow>
+      semantics e f g (Imp p1 p2) \<longleftrightarrow> semantics (e(x := v)) f g (Imp p1 p2)"
+  using assm1 assm2
+  by simp
+next
+  fix p1 p2 e
+  assume assm1: "\<not> free_in x p1 \<Longrightarrow> semantics e f g p1 \<longleftrightarrow> semantics (e(x := v)) f g p1" for e
+  assume assm2: "\<not> free_in x p2 \<Longrightarrow> semantics e f g p2 \<longleftrightarrow> semantics (e(x := v)) f g p2" for e
+  show "\<not> free_in x (Iff p1 p2) \<Longrightarrow>
+      semantics e f g (Iff p1 p2) \<longleftrightarrow> semantics (e(x := v)) f g (Iff p1 p2)"
+  using assm1 assm2
+  by simp
+next
+  fix p1 p2 e
+  assume assm1: "\<not> free_in x p1 \<Longrightarrow> semantics e f g p1 \<longleftrightarrow> semantics (e(x := v)) f g p1" for e
+  assume assm2: "\<not> free_in x p2 \<Longrightarrow> semantics e f g p2 \<longleftrightarrow> semantics (e(x := v)) f g p2" for e
+  show "\<not> free_in x (And p1 p2) \<Longrightarrow>
+      semantics e f g (And p1 p2) \<longleftrightarrow> semantics (e(x := v)) f g (And p1 p2)"
+  using assm1 assm2
+  by simp
+next
+  fix p1 p2 e
+  assume assm1: "\<not> free_in x p1 \<Longrightarrow> semantics e f g p1 \<longleftrightarrow> semantics (e(x := v)) f g p1" for e
+  assume assm2: "\<not> free_in x p2 \<Longrightarrow> semantics e f g p2 \<longleftrightarrow> semantics (e(x := v)) f g p2" for e
+  show "\<not> free_in x (Or p1 p2) \<Longrightarrow>
+      semantics e f g (Or p1 p2) \<longleftrightarrow> semantics (e(x := v)) f g (Or p1 p2)"
+  using assm1 assm2
+  by simp
+next
+  fix p e
+  assume "\<not> free_in x p \<Longrightarrow> semantics e f g p \<longleftrightarrow> semantics (e(x := v)) f g p" for e
+  then show "\<not> free_in x (Not p) \<Longrightarrow> semantics e f g (Not p) \<longleftrightarrow> semantics (e(x := v)) f g (Not p)"
+  by simp
+qed
+
+lemma length2_equiv:
+  "length2 l \<longleftrightarrow> [hd l, hd (tl l)] = l"
+proof -
+  have "length2 l \<Longrightarrow> [hd l, hd (tl l)] = l"
+  unfolding length2_def
+  using list.case_eq_if list.exhaust_sel
+  by metis
+  then show ?thesis
+  unfolding length2_def
+  using list.case list.case_eq_if
+  by metis
+qed
+
+lemma equal_length_sym:
+  "equal_length l l' \<Longrightarrow> equal_length l' l"
+proof (induct l' arbitrary: l)
+  fix l
+  assume "equal_length l []"
+  then show "equal_length [] l"
+  using equal_length.simps list.case_eq_if
+  by metis
+next
+  fix l l' a
+  assume sym: "equal_length l l' \<Longrightarrow> equal_length l' l" for l
+  assume "equal_length l (a # l')"
+  then show "equal_length (a # l') l"
+  using equal_length.simps list.case_eq_if list.collapse list.inject sym
+  by metis
+qed
+
+lemma equal_length2:
+  "equal_length l l' \<Longrightarrow> length2 l \<longleftrightarrow> length2 l'"
+proof -
+  assume assm: "equal_length l l'"
+  have "equal_length l [t, t'] \<Longrightarrow> length2 l" for t t'
+  unfolding length2_def
+  using equal_length.simps list.case_eq_if
+  by metis
+  moreover have "equal_length [t, t'] l' \<Longrightarrow> length2 l'" for t t'
+  unfolding length2_def
+  using equal_length.simps list.case_eq_if equal_length_sym
+  by metis
+  ultimately show ?thesis
+  using assm length2_equiv
+  by metis
+qed
+
+lemma imp_chain_equiv:
+  "semantics e f g (foldr Imp l p) \<longleftrightarrow> (\<forall>q \<in> set l. semantics e f g q) \<longrightarrow> semantics e f g p"
+using imp_conjL
+by (induct l) simp_all
+
+lemma imp_chain_zip_eq:
+  "equal_length l l' \<Longrightarrow>
+      semantics e f g (foldr Imp (zip_eq l l') p) \<longleftrightarrow>
+      semantics_list e f l = semantics_list e f l' \<longrightarrow> semantics e f g p"
+proof -
+  assume "equal_length l l'"
+  then have "(\<forall>q \<in> set (zip_eq l l'). semantics e f g q) \<longleftrightarrow>
+      semantics_list e f l = semantics_list e f l'"
+  unfolding zip_eq_def
+  using length2_def
+  by (induct l l' rule: list_induct2') simp_all
+  then show ?thesis
+  using imp_chain_equiv
+  by iprover
+qed
+
+lemma funcong:
+  "equal_length l l' \<Longrightarrow>
+      semantics e f g (foldr Imp (zip_eq l l') (Atom (Rl (STR ''='') [Fn i l, Fn i l'])))"
+proof -
+  assume assm: "equal_length l l'"
+  show ?thesis
+  proof cases
+    assume "semantics_list e f l = semantics_list e f l'"
+    then have "semantics e f g (Atom (Rl (STR ''='') [Fn i l, Fn i l']))"
+    using length2_def
+    by simp
+    then show ?thesis
+    using imp_chain_equiv
+    by iprover
+  next
+    assume "semantics_list e f l \<noteq> semantics_list e f l'"
+    then show ?thesis
+    using assm imp_chain_zip_eq
+    by iprover
+  qed
+qed
+
+lemma predcong:
+  "equal_length l l' \<Longrightarrow>
+      semantics e f g (foldr Imp (zip_eq l l') (Imp (Atom (Rl i l)) (Atom (Rl i l'))))"
+proof -
+  assume assm: "equal_length l l'"
+  show ?thesis
+  proof cases
+    assume eq: "i = STR ''='' \<and> length2 l \<and> length2 l'"
+    show ?thesis
+    proof cases
+      assume "semantics_list e f l = semantics_list e f l'"
+      then have "semantics_list e f [hd l, hd (tl l)] = semantics_list e f [hd l', hd (tl l')]"
+      using eq length2_equiv
+      by simp
+      then have "semantics e f g (Imp (Atom (Rl (STR ''='') l)) (Atom (Rl (STR ''='') l')))"
+      using eq
+      by simp
+      then show ?thesis
+      using eq imp_chain_equiv
+      by iprover
+    next
+      assume "semantics_list e f l \<noteq> semantics_list e f l'"
+      then show ?thesis
+      using assm imp_chain_zip_eq
+      by iprover
+    qed
+  next
+    assume not_eq: "\<not> (i = STR ''='' \<and> length2 l \<and> length2 l')"
+    show ?thesis
+    proof cases
+      assume "semantics_list e f l = semantics_list e f l'"
+      then have "semantics e f g (Imp (Atom (Rl i l)) (Atom (Rl i l')))"
+      using assm not_eq equal_length2 
+      by (smt (verit, ccfv_threshold) fol.case length2_equiv list.inject semantics.simps(3) semantics.simps(4) semantics_list.simps(2))
+      then show ?thesis
+      using imp_chain_equiv
+      by iprover
+    next
+      assume "semantics_list e f l \<noteq> semantics_list e f l'"
+      then show ?thesis
+      using assm imp_chain_zip_eq
+      by iprover
+    qed
+  qed
+qed
+
+lemma One_SC_soundness: \<open>\<stileturn> G \<Longrightarrow> (\<exists>p \<in> set G. \<not> semantics e f g p)\<close>
+proof (induct G  arbitrary: e rule: sequent.induct)
+  case (andI p p' \<Gamma>)
+  then show ?case apply auto done
+next
+  case (neg_orI p p' \<Gamma>)
+  then show ?case apply auto done
+next
+  case (orI p \<Gamma> p')
+  then show ?case apply auto done
+next
+  case (neg_andI p \<Gamma> p')
+  then show ?case apply auto done
+next
+  case (neg_negI p \<Gamma>)
+  then show ?case apply auto done
+next
+  case (not_memberI e ec x \<Gamma>)
+  then show ?case apply auto sorry
+next
+  case (not_eq y x xs i \<Gamma>)
+  then show ?case apply simp sorry  
+next
+  case (cut e ec x \<Gamma> RL)
+  then show ?case  apply auto sorry
+next
+  case (eq_prop x e y \<Gamma>)
+  then show ?case sorry
+next
+  case (neq_subsume e1 e2 x y \<Gamma>)
+  then show ?case sorry
+next
+  case (eq_prop_elim e x y \<Gamma>)
+  then show ?case sorry
+next
+  case (neq_prop_elim e ec x y \<Gamma>)
+  then show ?case sorry
+next
+  case (close es x \<Gamma>)
+  then show ?case sorry
+next
+  case (subsume e es x \<Gamma>)
+  then show ?case sorry
+next
+  case (intersect e es x \<Gamma>)
+  then show ?case sorry
+next
+  case (fwd_prop e e1 e2 x i x1 x2 \<Gamma>)
+  then show ?case sorry
+next
+  case (fwd_prop_elim e e1 e2 x x1 \<Gamma> i x2)
+  then show ?case sorry
+qed
+ 
 
 (*next
   case (Bwd_PropConc e es x1 x2 x \<Gamma>)
