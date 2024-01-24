@@ -17,6 +17,47 @@ datatype 'a rexp =
       | Star "'a rexp"
       | Inter "'a rexp" "'a rexp"
 
+datatype 'a item = Item 'a "'a rexp"
+
+datatype 'a sum = S1 "'a item" | S2 (headcl:"'a item") (tailcl:"'a sum")
+
+datatype 'a lin = Empty | Lin "'a sum"
+
+primrec head_item :: "'a item \<Rightarrow> 'a" where
+  "head_item (Item a r) = a"
+
+primrec head_sum :: "'a sum \<Rightarrow> 'a list" where 
+  "head_sum (S1 it) = [head_item it]" | 
+  "head_sum (S2 hit tls) = head_item hit # head_sum tls"  
+
+primrec head_lin ::"'a lin \<Rightarrow> 'a list" where
+  "head_lin Empty = []" | 
+  "head_lin (Lin s) = head_sum s"
+
+primrec tail_item :: "'a item \<Rightarrow> 'a rexp" where
+  "tail_item (Item a r) = r"
+
+primrec tail_sum :: "'a sum \<Rightarrow> 'a rexp list" where 
+  "tail_sum (S1 it) = [tail_item it]" | 
+  "tail_sum (S2 hit tls) = tail_item hit # tail_sum tls"  
+
+primrec tail_lin ::"'a lin \<Rightarrow> 'a rexp list" where
+  "tail_lin Empty = []" | 
+  "tail_lin (Lin s) = tail_sum s"
+
+
+abbreviation hd_l  where \<open>hd_l l \<equiv> set (head_lin l)\<close>
+
+abbreviation tl_l  where \<open>tl_l l \<equiv> set (tail_lin l)\<close>
+
+definition deterministic_lin :: "'a lin \<Rightarrow> bool" where
+"deterministic_lin l = (case l of 
+                  Empty \<Rightarrow> True |
+                  Lin s \<Rightarrow> if distinct (head_lin l) \<and> One \<notin> (tl_l l) then True else False)"
+
+abbreviation non_deterministic_lin  where \<open>non_deterministic_lin l \<equiv> \<not> deterministic_lin l\<close>
+
+
 text \<open>The interpretation map that induces regular languages as the
 images of regular expressions in the set of languages has also been
 adapted from there.\<close>

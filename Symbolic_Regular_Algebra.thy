@@ -40,7 +40,7 @@ class antimirow_base = star_dioid + ab_inter_semilattice_zero_one +
   assumes A16: "\<lbrakk>p \<in> \<bbbP>\<rbrakk> \<Longrightarrow> 1 \<^bsup>& p = 0"
   assumes A17: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (p \<cdot> a) \<^bsup>& (q \<cdot> b)  = (p \<^bsup>& q) \<cdot> (a \<^bsup>& b)"
   assumes A18: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>\<rbrakk> \<Longrightarrow> (a \<cdot> p) \<^bsup>& (b \<cdot> q)  = (a \<^bsup>& b) \<cdot> (p \<^bsup>& q)"
-  assumes A19: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>; p \<noteq> q\<rbrakk> \<Longrightarrow> p \<^bsup>& q = 0"
+  assumes A19: "\<lbrakk>p \<in> \<bbbP>; q \<in> \<bbbP>; p \<noteq> q\<rbrakk> \<Longrightarrow> p \<^bsup>& q = 0" 
 
 
 class Al_algebra = antimirow_base +
@@ -212,4 +212,37 @@ text \<open> Freely generated boolean algebra on a set of predicates. \<close>
 
 locale symbolic_algebra = A_algebra + eba
 
+
+class lf_sysetm = star_op + plus_ord + one + zero + inter_ord + times + 
+  fixes alp1 :: "'a set" ("\<bbbP>")
+  fixes f :: "'a \<Rightarrow> 'a"
+  assumes lf1: "(star 0) = 1"
+  assumes lf2: "star 1 = 1"
+  assumes lf3: "0 + a = a"
+  assumes lf4: "a + a = a"
+  assumes lf5: "0 * a = 0"
+  assumes lf51: "a * 0 = 0"
+  assumes lf6: "1 * a = a"
+  assumes lf7: "0 \<^bsup>& a = 0"
+  assumes lf8: "a \<^bsup>& a = a"
+  assumes lf9: "p \<in> alp1 \<Longrightarrow> 1 \<^bsup>& p = 0"
+  assumes lf10: "1 \<^bsup>& (a * b) = 1 \<^bsup>& a \<^bsup>& b"
+  assumes lf11: "1 \<^bsup>& (star a) = 1"
+  assumes lf12: "x \<^bsup>& y = (if x = y then x else 0)"
+  assumes lf13: "p \<in> alp1 \<Longrightarrow>  q \<in> alp1 \<Longrightarrow> (p * a) \<^bsup>& (q * b) = (p \<^bsup>& q) * (a \<^bsup>& b)"
+  assumes lf14: "p \<in> alp1 \<Longrightarrow> q \<in> alp1 \<Longrightarrow> (p * a) \<^bsup>& q = (p \<^bsup>& q) * (a \<^bsup>& 1)"
+  assumes lf15: "(a + b) \<^bsup>& c = (a \<^bsup>& c) + (b \<^bsup>& c)"
+  assumes lf16: "p \<in> alp1 \<Longrightarrow> p * b + p = p * (b + 1)"
+  assumes lf17: "p \<in> alp1 \<Longrightarrow> p * b + p * c = p * (b + c)"
+  assumes lf18: "p \<in> alp1 \<Longrightarrow> (p * a + b) * c = p * a * c + b * c"
+  assumes f1: "f 0 = 0"
+  assumes f2: "f 1 = 0"
+  assumes f3: "p \<in> alp1 \<Longrightarrow> f x = x * 1"
+  assumes f4: "p \<in> alp1 \<Longrightarrow> f (x * a) = x * a"
+  assumes f5: "f (star(a) * b) = (f a) * (star a) * b + f b"
+  assumes f6: "f ((a + b) * c) = f (a * c) + f (b * c)"
+  assumes f7: "f ((a \<^bsup>& b) * c) = ((f a) \<^bsup>& (f b)) * (f c) + (1 \<^bsup>& a \<^bsup>& b) * f c"
+  assumes f8: "f (a + b) = f a + f b"
+  assumes f9: "f (a \<^bsup>& b) = f a \<^bsup>& f b"
+  assumes f10: "f (star a) = f a * (star a)"
 end
