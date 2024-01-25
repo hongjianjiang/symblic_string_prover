@@ -42,7 +42,7 @@ definition sum_equations1 :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a lis
 
 value "[0..<1] ! 0"
 
-lemma "sum_equations1 [a] [r1,r2] [[c],[d]] 0 0 = (a * c) + 0 + r1"
+lemma "sum_equations1 [a,b,c] [r1,r2,r3] [[a,b],[c,d]] 0 1 = (a * c) + 0 + r1"
   apply(simp add:sum_equations1_def) 
   done
 
