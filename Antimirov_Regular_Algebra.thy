@@ -1,4 +1,4 @@
-theory Antimiro_Reguar_Algebra
+theory Antimirov_Regular_Algebra
   imports Main  Signatures 
 begin
 
@@ -38,21 +38,39 @@ definition tt1 :: "'a \<Rightarrow> 'a list list \<Rightarrow> 'a list list" whe
 
 definition sum_equations1 :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a " where 
 "sum_equations1 a_values r_values r_matrix i n = 
-          ((List.foldr (+) (map (\<lambda>j. (*) (a_values ! j) (r_matrix !i ! j)) [0..<n+1]) 0) + (r_values ! i))"
+          ((List.fold (+) (map (\<lambda>j. (*) (a_values ! j) (r_matrix !i ! j)) [0..<n+1]) 0) + (r_values ! i))"
 
-value "[0..<1] ! 0"
+fun reduce_plus :: "'a list \<Rightarrow> 'a" where
+  "reduce_plus [] = 0"|
+  "reduce_plus (x#xs) = x + reduce_plus xs"
 
-lemma "sum_equations1 [a,b,c] [r1,r2,r3] [[a,b],[c,d]] 0 1 = (a * c) + 0 + r1"
-  apply(simp add:sum_equations1_def) 
+definition component ::"'a list list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" where
+"component rmat as i n = List.fold (+) (map (\<lambda>j. (*) (as!i) (rmat!i!j)) [0..<n+1]) 0"
+
+
+lemma aux_comp: "component rmat x i n = x!i*(rmat!i!n) + component rmat x i (n-1)"
+  apply(auto simp:component_def)
+  apply(induct n)
+  apply simp 
+  apply (simp add: local.S6 local.S9)
+  apply simp
   done
 
-definition sum_equations :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where 
-"sum_equations a_values r_values r_matrix i n = 
-          (a_values !i = (List.foldr (+) (map (\<lambda>j. (*) (a_values ! j) (r_matrix !i ! j)) [0..<n]) 0) + (r_values ! i))"
+definition ai_equals_rij :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where 
+"ai_equals_rij als rls r_matrix i n = 
+          (als!i = component r_matrix als i n + (rls!i))"
 
 definition ewp_list where "ewp_list l = (filter (\<lambda>r. ewp r) l = [])"
 
-definition ewp_matrix where "ewp_matrix l = (filter (\<lambda>r. ewp_list r) l = [])"
+definition ewp_matrix where "ewp_matrix ls = (ewp_list (concat ls) \<and> ([] \<notin> set ls) \<and> ls \<noteq> [])"
+
+lemma ewp1: "ewp_list l \<Longrightarrow> \<forall>s \<in> set l. \<not> ewp s"
+  apply(simp add:ewp_list_def)
+  by (simp add: filter_empty_conv)
+
+lemma ewp2: "ewp_matrix ls \<Longrightarrow> \<forall>s \<in> set (concat ls). \<not> ewp s"
+  apply(simp add:ewp_matrix_def ewp_list_def)
+  by (simp add: filter_empty_conv)
 
 lemma "0 * 0 = 0"
   by (simp add: local.S8)
@@ -80,11 +98,37 @@ lemma "a * 0\<^sup>\<star> = a"
 lemma base_r:"x = x * r11 + r1 \<Longrightarrow> y = y * r11 + r1 \<Longrightarrow> \<not> ewp r11 \<Longrightarrow> x = y"
   by (metis local.SL)
 
+value "[[1::nat]]!0!0"
 
-lemma "sum_equations as rs rx 0 0 \<Longrightarrow> ewp_matrix rx \<Longrightarrow> as ! 0 = (rs ! 0) * (rx ! 0 !0)\<^sup>\<star>"
-  apply (simp add:sum_equations_def ewp_matrix_def ewp_list_def)
-  nitpick
-    
+lemma base: "ai_equals_rij as rs rx 0 0 \<Longrightarrow> ewp_matrix rx \<Longrightarrow> as ! 0 = (rs ! 0) * (rx ! 0 !0)\<^sup>\<star>"
+  apply (auto simp:ai_equals_rij_def ewp_matrix_def ewp_list_def component_def)
+proof -
+  assume a1:"as ! 0 = as ! 0 \<cdot> rx ! 0 ! 0 + 0 + rs ! 0" and a2: "filter ewp (concat rx) = []" and a3: "[] \<notin> set rx" and a4:" rx \<noteq> []  "
+  then have "as ! 0 = as ! 0 \<cdot> rx ! 0 ! 0 + rs ! 0"
+    by (simp add: local.S9)
+  from a3 and a4 have "rx!0!0 \<in> set (concat rx)"
+    apply auto
+    by (metis hd_conv_nth hd_in_set)
+  then have "\<not> ewp (rx ! 0 !0)" using a2 a3 ewp2  apply auto 
+    by (metis \<open>rx ! 0 ! 0 \<in> set (concat rx)\<close> filter_empty_conv)
+  then have "as ! 0 = (rs ! 0) * (rx ! 0 ! 0)\<^sup>\<star>"
+    using \<open>as ! 0 = as ! 0 \<cdot> rx ! 0 ! 0 + rs ! 0\<close> local.SL by blast
+  then show ?thesis apply auto done
+qed
+
+
+lemma "ai_equals_rij as rs rx n n \<Longrightarrow> as!n = component rx as n (n-1) + as!n * (rx!n!n) + rs!n"
+  apply(simp add:ai_equals_rij_def) 
+  by (metis One_nat_def aux_comp local.S3)
+
+
+lemma "ai_equals_rij as rs rx 0 n \<Longrightarrow> ewp_matrix rx \<Longrightarrow> as ! 0 = (rs ! 0) * (rx ! 0 !0)\<^sup>\<star>"
+  apply(auto simp:ewp_matrix_def ewp_list_def)
+  apply(induct n)
+  subgoal
+    using base ewp_list_def ewp_matrix_def by presburger
+  sorry
+
 end
 
 class REG = one + zero + times + plus + star_op + 
