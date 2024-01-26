@@ -36,20 +36,25 @@ fun reduce_plus :: "'a list \<Rightarrow> 'a" where
   "reduce_plus [] = 0"|
   "reduce_plus (x#xs) = x + reduce_plus xs"
 
-definition component ::"'a list list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" where
-"component rmat as i n = List.fold (+) (map (\<lambda>j. (*) (as!i) (rmat!i!j)) [0..<n+1]) 0"
+definition sum_rexp ::"'a list list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" where (* \<Sum>(j=0-n). ai * rij + 0 *)
+"sum_rexp r a i n = List.fold (+) (map (\<lambda>j. (*) (a!i) (r!i!j)) [0..<n+1]) 0"
 
-lemma aux_comp: "component rmat x i n = x!i*(rmat!i!n) + component rmat x i (n-1)"
-  apply(auto simp:component_def)
+  
+lemma aux_comp: "sum_rexp rmat x i n = x!i*(rmat!i!n) + sum_rexp rmat x i (n-1)"
+  apply(auto simp:sum_rexp_def)
   apply(induct n)
   apply simp 
   apply (simp add: local.S6 local.S9)
   apply simp
   done
 
+definition matrix_ewp :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> bool" where
+"matrix_ewp a l r n = (length a = (n+1) \<and> length r = (n+1)  \<and> (\<forall>l\<in>set r. length l = (n+1)) \<and> length l = (n+1))"
+
+
 definition ai_equals_rij :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> bool" where 
-"ai_equals_rij als rls r_matrix n = 
-          (\<forall>i\<in> set [0..<n+1]. als!i = component r_matrix als i n + (rls!i))"
+"ai_equals_rij a l r n = 
+          (\<forall>i\<in> set [0..<n+1]. a!i = sum_rexp r a i n + (l!i))"
 
 definition ai_equals_rij' :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> bool" where 
 "ai_equals_rij' als rls r_matrix n = 
@@ -95,7 +100,7 @@ lemma base_r:"x = x * r11 + r1 \<Longrightarrow> y = y * r11 + r1 \<Longrightarr
   by (metis local.SL)
 
 lemma base: "ai_equals_rij as rs rx 0 \<Longrightarrow> ewp_matrix rx \<Longrightarrow> as ! 0 = (rs ! 0) * (rx ! 0 !0)\<^sup>\<star>"
-  apply (auto simp:ai_equals_rij_def ewp_matrix_def ewp_list_def component_def)
+  apply (auto simp:ai_equals_rij_def ewp_matrix_def ewp_list_def sum_rexp_def)
 proof -
   assume a1:"as ! 0 = as ! 0 \<cdot> rx ! 0 ! 0 + 0 + rs ! 0" and a2: "filter ewp (concat rx) = []" and a3: "[] \<notin> set rx" and a4:" rx \<noteq> []  "
   then have "as ! 0 = as ! 0 \<cdot> rx ! 0 ! 0 + rs ! 0"
@@ -110,24 +115,28 @@ proof -
   then show ?thesis apply auto done
 qed
 
+ (* an = \<Sum>j=1-(n-1)aj * rnj + an* rnn + rn \<Rightarrow> an = (\<Sum>j=1-(n-1)aj * rnj + rn) * rnn\<^sup>* *)
+lemma "matrix_ewp a l r n \<Longrightarrow> ewp_matrix r \<Longrightarrow> a!n = sum_rexp r a n (n-1) + a!n * r!n!n + l!n \<Longrightarrow> a!n = (sum_rexp r a n (n-1) + l!n) * (r!n!n)\<^sup>\<star>"
+  apply (simp add:ewp_matrix_def ewp_list_def sum_rexp_def matrix_ewp_def)
+  apply auto
+  by (smt (verit) UN_I filter_empty_conv lessI local.S1 local.S3 local.SL nth_mem set_concat)
 
-lemma "ai_equals_rij as rs rx n \<Longrightarrow> as!n = component rx as n (n-1) + as!n * (rx!n!n) + rs!n"
+lemma "ai_equals_rij as rs rx n \<Longrightarrow> as!n = sum_rexp rx as n (n-1) + as!n * (rx!n!n) + rs!n"
   apply(simp add:ai_equals_rij_def) 
   by (metis One_nat_def aux_comp local.S3)
 
-lemma aux1:"\<not> ewp (rx!n!n) \<Longrightarrow> as!n = component rx as n (n-1) + as!n * (rx!n!n) + rs!n ==> as!n = (component rx as n (n-1) + rs!n) * (rx!n!n)\<^sup>\<star>"
+lemma aux1:"\<not> ewp (rx!n!n) \<Longrightarrow> as!n = sum_rexp rx as n (n-1) + as!n * (rx!n!n) + rs!n ==> as!n = (sum_rexp rx as n (n-1) + rs!n) * (rx!n!n)\<^sup>\<star>"
 proof -
-  assume "as ! n = component rx as n (n - 1) + as ! n \<cdot> rx ! n ! n + rs ! n" and a1: "\<not> ewp (rx!n!n)"
-  then have "as ! n = as ! n \<cdot> rx ! n ! n + (component rx as n (n - 1) + rs ! n)"
+  assume "as ! n = sum_rexp rx as n (n - 1) + as ! n \<cdot> rx ! n ! n + rs ! n" and a1: "\<not> ewp (rx!n!n)"
+  then have "as ! n = as ! n \<cdot> rx ! n ! n + (sum_rexp rx as n (n - 1) + rs ! n)"
     by (metis local.S1 local.S3)
   then show ?thesis  using a1 
     using local.SL by blast
 qed
 
 
-lemma aux2: "length as = (n+1) \<and> length rx = (n+1)  \<and> (\<forall>l\<in>set rx. length l = (n+1)) \<and> length rs = (n+1) \<Longrightarrow> 
-      ai_equals_rij as rs rx n \<Longrightarrow> ewp_matrix rx \<Longrightarrow>  as!n = (component rx as n (n-1) + rs!n) * (rx!n!n)\<^sup>\<star>"
-  apply(auto simp:ewp_matrix_def ewp_list_def ai_equals_rij_def)
+lemma aux2: "matrix_ewp a l r n \<Longrightarrow>  ai_equals_rij a l r  n \<Longrightarrow> ewp_matrix r \<Longrightarrow>  a!n = (sum_rexp r a n (n-1) + l!n) * (r!n!n)\<^sup>\<star>"
+  apply(auto simp:ewp_matrix_def ewp_list_def ai_equals_rij_def matrix_ewp_def)
   apply(induct n)  
   apply (smt (verit) UN_I aux1 aux_comp ewp2 ewp_list_def ewp_matrix_def length_greater_0_conv local.S3 nth_mem set_concat zero_diff)
   by (metis One_nat_def UN_I aux1 aux_comp filter_empty_conv lessI local.S3 nth_mem set_concat)
