@@ -32,21 +32,12 @@ class salomaa = zero + star_op + plus + times +
     SL : "\<lbrakk> \<not> ewp y; x = x * y + z \<rbrakk> \<Longrightarrow> x = z * y\<^sup>\<star>"
 begin
 
-definition tt1 :: "'a \<Rightarrow> 'a list list \<Rightarrow> 'a list list" where
-"tt1 a rs = map (\<lambda>i. (map (\<lambda>j. a * j) i)) rs"
-
-
-definition sum_equations1 :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a " where 
-"sum_equations1 a_values r_values r_matrix i n = 
-          ((List.fold (+) (map (\<lambda>j. (*) (a_values ! j) (r_matrix !i ! j)) [0..<n+1]) 0) + (r_values ! i))"
-
 fun reduce_plus :: "'a list \<Rightarrow> 'a" where
   "reduce_plus [] = 0"|
   "reduce_plus (x#xs) = x + reduce_plus xs"
 
 definition component ::"'a list list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" where
 "component rmat as i n = List.fold (+) (map (\<lambda>j. (*) (as!i) (rmat!i!j)) [0..<n+1]) 0"
-
 
 lemma aux_comp: "component rmat x i n = x!i*(rmat!i!n) + component rmat x i (n-1)"
   apply(auto simp:component_def)
@@ -56,13 +47,18 @@ lemma aux_comp: "component rmat x i n = x!i*(rmat!i!n) + component rmat x i (n-1
   apply simp
   done
 
-definition ai_equals_rij :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where 
-"ai_equals_rij als rls r_matrix i n = 
-          (als!i = component r_matrix als i n + (rls!i))"
+definition ai_equals_rij :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> bool" where 
+"ai_equals_rij als rls r_matrix n = 
+          (\<forall>i\<in> set [0..<n+1]. als!i = component r_matrix als i n + (rls!i))"
+
+definition ai_equals_rij' :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list list \<Rightarrow> nat \<Rightarrow> bool" where 
+"ai_equals_rij' als rls r_matrix n = 
+    (\<forall>i\<in> set [0..<n]. als!i = List.fold (+) 
+(map (\<lambda>j. (*) (als!i) ((r_matrix!i!j) + r_matrix!n!j * (r_matrix!n!n)\<^sup>\<star> * (r_matrix!i!n))) [0..<n+1]) 0 + (rls!i + rls!n*(r_matrix!n!n)\<^sup>\<star> * (r_matrix!i!n)))"
 
 definition ewp_list where "ewp_list l = (filter (\<lambda>r. ewp r) l = [])"
 
-definition ewp_matrix where "ewp_matrix ls = (ewp_list (concat ls) \<and> ([] \<notin> set ls) \<and> ls \<noteq> [])"
+definition ewp_matrix where "ewp_matrix ls = (ewp_list (concat ls) \<and> [] \<notin> set ls \<and> ls \<noteq> [])"
 
 lemma ewp1: "ewp_list l \<Longrightarrow> \<forall>s \<in> set l. \<not> ewp s"
   apply(simp add:ewp_list_def)
@@ -98,9 +94,7 @@ lemma "a * 0\<^sup>\<star> = a"
 lemma base_r:"x = x * r11 + r1 \<Longrightarrow> y = y * r11 + r1 \<Longrightarrow> \<not> ewp r11 \<Longrightarrow> x = y"
   by (metis local.SL)
 
-value "[[1::nat]]!0!0"
-
-lemma base: "ai_equals_rij as rs rx 0 0 \<Longrightarrow> ewp_matrix rx \<Longrightarrow> as ! 0 = (rs ! 0) * (rx ! 0 !0)\<^sup>\<star>"
+lemma base: "ai_equals_rij as rs rx 0 \<Longrightarrow> ewp_matrix rx \<Longrightarrow> as ! 0 = (rs ! 0) * (rx ! 0 !0)\<^sup>\<star>"
   apply (auto simp:ai_equals_rij_def ewp_matrix_def ewp_list_def component_def)
 proof -
   assume a1:"as ! 0 = as ! 0 \<cdot> rx ! 0 ! 0 + 0 + rs ! 0" and a2: "filter ewp (concat rx) = []" and a3: "[] \<notin> set rx" and a4:" rx \<noteq> []  "
@@ -117,17 +111,59 @@ proof -
 qed
 
 
-lemma "ai_equals_rij as rs rx n n \<Longrightarrow> as!n = component rx as n (n-1) + as!n * (rx!n!n) + rs!n"
+lemma "ai_equals_rij as rs rx n \<Longrightarrow> as!n = component rx as n (n-1) + as!n * (rx!n!n) + rs!n"
   apply(simp add:ai_equals_rij_def) 
   by (metis One_nat_def aux_comp local.S3)
 
+lemma aux1:"\<not> ewp (rx!n!n) \<Longrightarrow> as!n = component rx as n (n-1) + as!n * (rx!n!n) + rs!n ==> as!n = (component rx as n (n-1) + rs!n) * (rx!n!n)\<^sup>\<star>"
+proof -
+  assume "as ! n = component rx as n (n - 1) + as ! n \<cdot> rx ! n ! n + rs ! n" and a1: "\<not> ewp (rx!n!n)"
+  then have "as ! n = as ! n \<cdot> rx ! n ! n + (component rx as n (n - 1) + rs ! n)"
+    by (metis local.S1 local.S3)
+  then show ?thesis  using a1 
+    using local.SL by blast
+qed
 
-lemma "ai_equals_rij as rs rx 0 n \<Longrightarrow> ewp_matrix rx \<Longrightarrow> as ! 0 = (rs ! 0) * (rx ! 0 !0)\<^sup>\<star>"
-  apply(auto simp:ewp_matrix_def ewp_list_def)
-  apply(induct n)
-  subgoal
-    using base ewp_list_def ewp_matrix_def by presburger
+
+lemma aux2: "length as = (n+1) \<and> length rx = (n+1)  \<and> (\<forall>l\<in>set rx. length l = (n+1)) \<and> length rs = (n+1) \<Longrightarrow> 
+      ai_equals_rij as rs rx n \<Longrightarrow> ewp_matrix rx \<Longrightarrow>  as!n = (component rx as n (n-1) + rs!n) * (rx!n!n)\<^sup>\<star>"
+  apply(auto simp:ewp_matrix_def ewp_list_def ai_equals_rij_def)
+  apply(induct n)  
+  apply (smt (verit) UN_I aux1 aux_comp ewp2 ewp_list_def ewp_matrix_def length_greater_0_conv local.S3 nth_mem set_concat zero_diff)
+  by (metis One_nat_def UN_I aux1 aux_comp filter_empty_conv lessI local.S3 nth_mem set_concat)
+
+
+lemma ec_0: "ewp_list xs \<Longrightarrow> 0 = List.fold (+) (map (\<lambda>x. 0 * x) xs) 0 + 0"
+  apply(induct xs)
+  apply simp 
+  apply (simp add: local.S9)
+  by (metis ewp_list_def filter_empty_conv fold_simps(2) list.set_intros(2) list.simps(9) local.S8 t3) 
+
+lemma ec_x_aux1:"0 = fold (+) (map (\<lambda>i. 0 \<cdot> i) (xs)) 0"
+  apply (induct xs)
+  apply simp
+  apply simp 
+  by (metis local.S8 local.S9)
+
+lemma ec_x: "ewp_list xs \<Longrightarrow>  0< i \<and> i\<le>length xs\<Longrightarrow> xs ! i = List.fold (+) (map (\<lambda>i. 0 * i) ((take (i-1) xs) @ drop (length xs -i) xs)) 0 + 0 + 0\<^sup>\<star> * xs!i"
+proof -
+  assume a1:"ewp_list xs" and a2:"0 < i \<and> i \<le> length xs"
+  then have "0 = fold (+) (map ((\<cdot>) 0) (take (i - 1) xs @ drop (length xs - i) xs)) 0"
+    using ec_x_aux1 by blast
+  moreover have "xs ! i = 0 + 0 + 0\<^sup>\<star> \<cdot> xs ! i "
+    using local.S7 local.S8 t2 t3 by auto
+  then show "xs ! i = fold (+) (map ((\<cdot>) 0) (take (i - 1) xs @ drop (length xs - i) xs)) 0 + 0 + 0\<^sup>\<star> \<cdot> xs ! i"
+    using ec_x_aux1 by presburger
+qed
+
+lemma ec_one: "0\<^sup>\<star> = List.fold (+) (map (\<lambda>x. 0 * x) xs) 0 + 0\<^sup>\<star>  "
+  using ec_x_aux1 local.S8 t2 t3 by auto
+
+
+lemma equivlance: "ai_equals_rij as rs rx n \<Longrightarrow> ai_equals_rij bs rs rx n \<Longrightarrow> \<forall>i\<in>set[0..<n+1]. as!i = b!i"
   sorry
+
+
 
 end
 
